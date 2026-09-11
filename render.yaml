@@ -1,0 +1,41 @@
+databases:
+  - name: sistema-telefonia-db
+    plan: free
+
+services:
+  - type: web
+    name: sistema-telefonia-api
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sistema-telefonia-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+
+  - type: web
+    name: sistema-telefonia-frontend
+    runtime: static
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: sistema-telefonia-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

@@ -1,0 +1,29 @@
+# System files
+.DS_Store
+Thumbs.db
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Paquetes/documentos temporales
+*.zip
+*.exe
