@@ -1,4 +1,6 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FieldWrapperProps {
   label: string;
@@ -24,10 +26,26 @@ const inputBase =
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & FieldWrapperProps;
 
-export function TextField({ label, error, hint, dato, className = "", ...props }: InputProps) {
+export function TextField({ label, error, hint, dato, className = "", type, ...props }: InputProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword && showPassword ? "text" : type;
+
   return (
     <FieldWrapper label={label} error={error} hint={hint}>
-      <input className={`${inputBase} ${dato ? "dato" : ""} ${className}`} {...props} />
+      <div className="relative">
+        <input className={`${inputBase} ${dato ? "dato" : ""} ${className}`} type={inputType} {...props} />
+        {isPassword && (
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutro hover:text-tinta transition-colors"
+            onClick={() => setShowPassword(!showPassword)}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
+      </div>
     </FieldWrapper>
   );
 }
