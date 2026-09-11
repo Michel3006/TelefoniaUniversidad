@@ -52,4 +52,3 @@ La infraestructura se define en `render.yaml` (blueprint de Render):
 
 El frontend obtiene `VITE_API_URL` del `RENDER_EXTERNAL_URL` del backend automáticamente.
 
-> **Nota free tier**: las instancias gratuitas de Render duermen tras ~15 min de inactividad y el primer request tarda unos segundos en reactivarse. La base PostgreSQL gratuita puede eliminarse a los 30 días de inactividad: guardá una copia si te importan los datos.
