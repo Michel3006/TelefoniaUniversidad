@@ -9,8 +9,8 @@ services:
     plan: free
     region: oregon
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    startCommand: cd backend && alembic upgrade head && python app/seed.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
