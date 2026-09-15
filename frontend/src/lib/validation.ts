@@ -65,7 +65,7 @@ function verificarCuit(cuit: string): boolean {
 
 export function validarCampo(valor: string, campo: ReglaCampo): string | null {
   const v = (valor ?? "").trim();
-  const obligatorio = campo.required || campo.tipo === "select";
+  const obligatorio = campo.required === true;
 
   if (obligatorio && v === "") return "Este campo es obligatorio.";
   if (v === "") return null;
