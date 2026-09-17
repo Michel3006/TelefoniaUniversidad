@@ -4,37 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  color-scheme: light;
-}
-
-body {
-  @apply bg-papel text-tinta font-sans antialiased;
-}
-
-:focus-visible {
-  outline: 2px solid #e1922e;
-  outline-offset: 2px;
-}
-
-::selection {
-  background: #e1922e;
-  color: #1c1f1d;
-}
-
-/* Convención del sistema: todo dato real (números de línea, IMEI, ICCID,
-   montos, fechas, IDs) usa esta clase con la tipografía monoespaciada.
-   El resto del texto de interfaz nunca la usa. */
-.dato {
-  font-family: '"IBM Plex Mono"', ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-}
-
+html { color-scheme: light; }
+body { @apply bg-papel text-tinta font-sans antialiased; }
+:focus-visible { outline: 2px solid #1f8f5f; outline-offset: 2px; }
+::selection { background: #1f8f5f; color: #ffffff; }
+.dato { font-family: '"IBM Plex Mono"', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
