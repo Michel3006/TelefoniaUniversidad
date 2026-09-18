@@ -16,14 +16,16 @@ El **Sistema de Gestión de Telefonía** es una aplicación web para inventariar
 - Inventariar recursos telefónicos: teléfonos fijos, extensiones, líneas móviles, dispositivos y tarjetas SIM.
 - Gestionar contratos y planes con información de vencimientos y costos mensuales.
 - Asignar recursos a personas y auditar quién tiene cada cosa.
-- Cargar costos mensuales y visualizar totales por departamento, operador y período.
+- Cargar costos mensuales y visualizar totales por departamento y período (en CUP).
 - Auditar todos los cambios a través de un historial de movimientos.
+- Sincronizar trabajadores, cargos, áreas y unidades organizativas desde el sistema institucional de RRHH (**ASSETS_RH**, SQL Server) hacia las tablas locales de espejo.
 
 ### 1.2 Contexto tecnológico
 
-- **Backend**: Python 3.12, FastAPI 0.115, SQLAlchemy 2.0 (ORM), Alembic (migraciones), Pydantic 2 / Pydantic-Settings, autenticación JWT (`python-jose`) con contraseñas `bcrypt`.
+- **Backend**: Python 3.12, FastAPI 0.115, SQLAlchemy 2.0 (ORM), Alembic (migraciones), Pydantic 2 / Pydantic-Settings, autenticación JWT (`python-jose`) con contraseñas `bcrypt`, `pyodbc` (conexión opcional a ASSETS_RH).
 - **Frontend**: React 18 + TypeScript 5, Vite 5, TanStack Query 5, TanStack Table 8, React Router 6, TailwindCSS 3, Recharts (gráficos), Lucide (íconos).
 - **Base de datos**: por defecto PostgreSQL (URL configurable). Para desarrollo local se usa **SQLite** (archivo `backend/test.db`) para simplificar las pruebas.
+- **Contexto de la organización**: operadora única **ETECSA** (campo `operador` de texto con default `"ETECSA"` en líneas, SIMs y planes), costos en **CUP** y locales/es-CU.
 - **Patrón de la UI**: paneles de listado con formularios deslizantes (slide-over), validación de formularios centralizada en el frontend, y un componente CRUD genérico reutilizable.
 
 ---
@@ -116,6 +118,7 @@ Archivo `backend/requirements.txt`:
 - `python-jose[cryptography]==3.3.0` — gestión de JWT.
 - `bcrypt==4.2.1` — hash de contraseñas.
 - `python-multipart==0.0.20` — formularios OAuth2 (`/auth/login`).
+- `pyodbc>=4.0.0` — driver ODBC para la sincronización opcional con ASSETS_RH (import perezoso).
 
 `backend/requirements-dev.txt` agrega `pytest` y `httpx` para pruebas.
 
@@ -146,6 +149,14 @@ Usa `pydantic-settings` y lee el archivo `.env` del directorio de backend (no ve
 | `secret_key` | `cambiar-en-produccion` | Clave para firmar los JWT. Cambiar en producción. |
 | `access_token_expire_minutes` | `30` | Minutos de validez del token. |
 | `algorithm` | `HS256` | Algoritmo de firma JWT. |
+| `moneda` | `CUP` | Moneda usada para los costos. |
+| `locale` | `es-CU` | Locale del frontend (fechas y moneda). |
+| `assets_rrhh_habilitado` | `False` | Habilita/deshabilita la conexión a ASSETS_RH. |
+| `assets_rrhh_server` | `10.8.6.191` | Servidor SQL Server de ASSETS_RH. |
+| `assets_rrhh_database` | `ASSETS_RH` | Base institucional de RRHH. |
+| `assets_rrhh_username` | `""` | Usuario de conexión a ASSETS_RH. |
+| `assets_rrhh_password` | `""` | Contraseña de conexión a ASSETS_RH. |
+| `assets_rrhh_driver` | `ODBC Driver 17 for SQL Server` | Driver ODBC instalado en el host. |
 
 `.env` de desarrollo actual (backend):
 
@@ -153,6 +164,11 @@ Usa `pydantic-settings` y lee el archivo `.env` del directorio de backend (no ve
 DATABASE_URL=sqlite:///./test.db
 SECRET_KEY=clave-secreta-para-desarrollo
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+# ASSETS_RRH_HABILITADO=true
+# ASSETS_RRH_SERVER=10.8.6.191
+# ASSETS_RRH_DATABASE=ASSETS_RH
+# ASSETS_RRH_USERNAME=
+# ASSETS_RRH_PASSWORD=
 ```
 
 ### 3.4 Base de datos y sesiones
@@ -168,28 +184,31 @@ Todos los modelos heredan de `Base` y usan `Mapped` / `mapped_column` (SQLAlchem
 | --- | --- | --- | --- |
 | `Rol` | `roles` | `nombre` (único), `descripcion` | usuarios |
 | `Usuario` | `usuarios` | `username` (único), `email` (único), `password_hash`, `activo`, `rol_id` | rol |
-| `Persona` | `personas` | `nombre`, `apellido`, `documento`, `email`, `telefono`, `departamento_id` | departamento |
-| `Departamento` | `departamentos` | `nombre`, `departamento_padre_id` | padre/hijos (jerárquico) |
+| `Cargo` | `cargos` | `codigo` (único), `nombre` | personas |
+| `Area` | `areas` | `codigo` (único), `nombre` | departamentos, personas |
+| `Persona` | `personas` | `nombre`, `apellido`, `apellido_2`, `documento`, `email`, `telefono`, `id_empleado` (único), `id_expediente`, `id_ccosto`, `cargo_id`, `area_id`, `departamento_id`, `baja` | cargo, area, departamento |
+| `Departamento` | `departamentos` | `nombre`, `departamento_padre_id`, `id_direccion` (único), `nivel`, `id_area`, `fecha_alta`, `fecha_baja`, `baja` | padre/hijos (jerárquico), area |
 | `Edificio` | `edificios` | `nombre`, `direccion` | — |
 | `Local` | `locales` | `edificio_id`, `piso`, `oficina`, `descripcion` | edificio |
 | `Estado` | `estados` | `nombre` (único), `descripcion` | teléfonos, extensiones, SIMs, líneas, dispositivos |
-| `Operador` | `operadores` | `nombre` (único), `descripcion` | SIMs, líneas, planes |
 | `Telefono` | `telefonos` | `numero` (único), `local_id`, `estado_id`, `observaciones` | local, estado, extensiones |
 | `Extension` | `extensiones` | `numero`, `telefono_id`, `estado_id`, `observaciones` | teléfono, estado |
-| `Sim` | `sims` | `iccid` (único), `imsi`, `operador_id`, `estado_id` | operador, estado |
-| `Linea` | `lineas` | `numero` (único), `operador_id`, `plan_id`, `sim_id`, `estado_id` | operador, plan, sim, estado, dispositivos |
+| `Sim` | `sims` | `iccid` (único), `imsi`, `operador` (default `"ETECSA"`), `estado_id` | estado |
+| `Linea` | `lineas` | `numero` (único), `operador` (default `"ETECSA"`), `plan_id`, `sim_id`, `estado_id` | plan, sim, estado, dispositivos |
 | `Dispositivo` | `dispositivos` | `marca`, `modelo`, `imei` (único), `linea_id`, `local_id`, `estado_id` | linea, local, estado |
-| `Contrato` | `contratos` | `numero`, `descripcion`, `fecha_inicio`, `fecha_vencimiento` | planes |
-| `Plan` | `planes` | `nombre`, `operador_id`, `contrato_id`, `coste_mensual`, `descripcion` | operador, contrato, lineas |
-| `Asignacion` | `asignaciones` | `persona_id`, `tipo_recurso` (`linea`/`dispositivo`/`extension`), `recurso_id`, `fecha_inicio`, `fecha_fin` | persona |
-| `Coste` | `costes` | `periodo` (AAAA-MM), `concepto`, `monto`, `moneda`, y `departamento_id`, `linea_id` o `contrato_id` opcionales | — |
+| `Contrato` | `contratos` | `numero`, `observaciones`, `fecha_inicio`, `fecha_vencimiento` | planes |
+| `Plan` | `planes` | `nombre`, `operador` (default `"ETECSA"`), `contrato_id`, `coste_mensual`, `observaciones` | contrato, lineas |
+| `Asignacion` | `asignaciones` | `persona_id`, `tipo_recurso` (`linea`/`telefono`/`dispositivo`/`extension`), `recurso_id`, `fecha_inicio`, `fecha_fin`, `observaciones` | persona |
+| `Coste` | `costes` | `periodo` (AAAA-MM), `importe`, `observaciones`, y `departamento_id` o `linea_id` opcionales | — |
 | `Historial` | `historial` | `entidad`, `entidad_id`, `accion` (creado/actualizado/eliminado), `campo`, `valor_anterior`, `valor_nuevo`, `usuario_id`, `fecha` | usuario |
 
 Notas de modelado:
 
-- **Asignaciones polimórficas**: `tipo_recurso` + `recurso_id` apuntan a una tabla u otra según el tipo (no hay FK real). El detalle de línea/teléfono usa `services/telefonia.py` para resolver el responsable.
-- **Costos polimórficos**: un coste puede imputarse a un departamento, a una línea o a un contrato (los tres opcionales).
+- **Asignaciones polimórficas**: `tipo_recurso` + `recurso_id` apuntan a una tabla u otra según el tipo (`linea`, `telefono`, `dispositivo`, `extension`; no hay FK real). El detalle de línea/teléfono usa `services/telefonia.py` para resolver el responsable.
+- **Costos polimórficos**: un coste puede imputarse a un departamento o a una línea (ambos opcionales).
 - **Departamentos jerárquicos**: `departamento_padre_id` apunta a la propia tabla (auto-relación con `remote_side=[id]`).
+- **Operador fijo**: se eliminó la tabla `operadores`; el operador es un campo de texto con default `"ETECSA"` en `lineas`, `sims` y `planes`.
+- **Espejo institucional**: `personas`, `departamentos`, `cargos` y `areas` se llenan/actualizan por la sincronización desde ASSETS_RH y son de solo lectura en la API.
 
 ### 3.6 Schemas Pydantic
 
@@ -203,6 +222,7 @@ Casos particulares:
 
 - `UsuarioRead` devuelve el objeto `rol` **anidado** (`rol: RolRead`).
 - `Token` (`access_token`, `token_type="bearer"`) para la respuesta de login.
+- `PersonaRead` y `DepartamentoRead` son de **solo lectura** (no hay `Create`/`Update`): los datos provienen de la sincronización institucional.
 - Lo schemas de detalle (`LineaDetalle`, `TelefonoDetalle`, `ContratoDetalle`, `PlanResumen`, `ExtensionResumen`) son armados a mano en los endpoints/services.
 
 ### 3.7 CRUD genérico (`app/api/v1/crud.py`)
@@ -221,7 +241,7 @@ Siempre que una entidad pase `entidad`, los cambios quedan trazados en el histor
 
 ### 3.8 Endpoints por módulo
 
-Referencia completa en la sección 7. Routers principales: `auth` (login/me), `usuarios`, `roles`, y los generados por `build_crud` para: personas, departamentos, edificios, locales, estados, operadores, teléfonos, extensiones, líneas, dispositivos, SIMs, planes, contratos, costos, asignaciones, historial y reportes.
+Referencia completa en la sección 7. Routers principales: `auth` (login/me), `usuarios`, `roles`, los generados por `build_crud` para: edificios, locales, estados, teléfonos, extensiones, líneas, dispositivos, SIMs, planes, contratos, costos, asignaciones, historial y reportes, y los routers de **solo lectura** (personas, departamentos, cargos, áreas) y de **sincronización** (admin).
 
 Endpoints custom (además del CRUD):
 
@@ -231,7 +251,8 @@ Endpoints custom (además del CRUD):
 - `GET /locales/por-edificio/{id}`.
 - `GET /asignaciones/activas`, `/asignaciones/por-recurso?tipo_recurso=&recurso_id=`, `/asignaciones/por-persona/{id}`, `PUT /asignaciones/{id}/finalizar`.
 - `GET /historial/` con filtros `entidad` y `entidad_id`.
-- `GET /reportes/inventario`, `/reportes/costes-totales`, `/reportes/costes-por-departamento`, `/reportes/costes-por-operador`, `/reportes/costes-por-periodo`, `/reportes/recursos-por-departamento`.
+- `GET /reportes/inventario`, `/reportes/costes-totales` (importe total CUP y períodos), `/reportes/costes-por-departamento`, `/reportes/costes-por-periodo`, `/reportes/recursos-por-departamento`.
+- `POST /sincronizacion/rrhh` (sync directo desde ASSETS_RH) y `POST /sincronizacion/rh-json` (importación JSON), ambos solo admin.
 - `GET /health` (fuera del prefijo) para chequeos.
 
 ### 3.9 Autenticación y seguridad
@@ -242,7 +263,7 @@ Endpoints custom (además del CRUD):
   - `get_current_user`: dependencia que decodifica el Bearer token, busca el usuario y guarda `request.state.user`.
   - `require_role(*roles)`: devuelve una dependencia que lanza 403 si el rol del usuario no está en la lista.
 - Flujo de login: `POST /auth/login` recibe `username`+`password` como form-urlencoded (estándar OAuth2), verifica contraseña y `activo`, devuelve `Token`. El frontend guarda el token en `localStorage` (`clave troncal.token`).
-- Protección de rutas: en `router.py` todos los routers (excepto `auth`) se montan con `dependencies=[Depends(get_current_user)]`. Solo `usuarios` y `roles` exigen rol `admin` (`require_role("admin")`).
+- Protección de rutas: en `router.py` todos los routers (excepto `auth`) se montan con `dependencies=[Depends(get_current_user)]`. Solo `usuarios`, `roles` y `sincronizacion` exigen rol `admin` (`require_role("admin")`).
 - Rol `admin`: acceso total. Los roles `gestor` y `consulta` están definidos en la migración inicial, pero en el backend actual solo `admin` tiene restricciones adicionales (el resto de recursos está abierto a cualquier usuario autenticado). Esto queda documentado para saber dónde aplicar permisos por rol si se necesita.
 
 ### 3.10 Servicios (`app/services/`)
@@ -250,8 +271,10 @@ Endpoints custom (además del CRUD):
 - `telefonia.py`:
   - `get_responsable_id(tipo, recurso_id)`: devuelve la persona asignada activa (fecha_fin nula), priorizando la asignación más reciente.
   - `get_telefono_detalle(...)`: número, ubicación (local/edificio), estado, observaciones y lista de extensiones con responsable.
-  - `get_linea_detalle(...)`: número, operador, plan, SIM (iccid/imsi), estado, dispositivo asignado y responsable.
-- `costes.py`: totales por período/departamento/línea/contrato y resúmenes agregados por departamento y por período (suma de `monto` + cantidad de registros).
+  - `get_linea_detalle(...)`: número, operador (texto, ej. "ETECSA"), plan, SIM (iccid/imsi), estado, dispositivo asignado y responsable.
+- `costes.py`: totales por período/departamento/línea y resúmenes agregados por departamento y por período (suma de `importe` + cantidad de registros).
+- `institucional.py`: espejo desde ASSETS_RH. `conectar_rrhh()` arma la conexión pyodbc (import perezoso; lanza `RuntimeError` si no está habilitada); `leer_datos()` consulta las tablas `RH_Cargos`, `RH_Area_Trabajo_Actual`, `RH_Unidades_Organizativas` y `Empleados_Gral`; `aplicar(db, datos)` persiste cargos, áreas, unidades (departamentos) y empleados (personas) y devuelve un resumen con los conteos procesados. La forma canónica de intercambio es snake_case (`cargos`, `areas`, `unidades`, `empleados`).
+- `scripts/sincronizar_rrhh.py`: script CLI que ejecuta la sincronización fuera de la API (pruebas y carga inicial).
 
 ### 3.11 Seed (`app/seed.py`)
 
@@ -265,8 +288,9 @@ python -m app.seed   # o: python app/seed.py  (desde backend/)
 
 - Configuración: `alembic/env.py` lee `settings.database_url` y usa `Base.metadata` como metadatos.
 - Migraciones existentes en `backend/alembic/versions/`:
-  - `001_initial.py`: crea las 18 tablas e inserta los roles `admin`, `gestor`, `consulta`.
+  - `001_initial.py`: crea las 18 tablas iniciales e inserta los roles `admin`, `gestor`, `consulta`.
   - `002_quitar_proveedores.py`: elimina la tabla `proveedores` y la columna `contratos.proveedor_id`.
+  - `003_integracion_institucional.py`: agrega `cargos` y `areas`; amplía `departamentos` (id_direccion, nivel, id_area, fechas, baja) y `personas` (id_empleado, id_expediente, apellido_2, exttelef, id_ccosto, cargo_id, area_id, baja); reemplaza `operador_id` por el campo de texto `operador` (default ETECSA) en `lineas`, `sims` y `planes`; renombra en `contratos` `descripcion`→`observaciones` y en `costes` `monto`→`importe` y `concepto`→`observaciones` (eliminando `moneda` y `contrato_id`); agrega `observaciones` a `asignaciones`; elimina la tabla `operadores`; inserta los estados iniciales.
 
 Comandos útiles (desde `backend/` con el venv activo):
 
@@ -407,18 +431,18 @@ Internamente: renderiza el listado (`DataTable`), un formulario en `SlideOver` c
 
 ### 4.9 Páginas
 
-Páginas que usan el **CRUD genérico** (mínima configuración): estados, operadores, extensiones, SIMs, dispositivos y planes.
+Páginas que usan el **CRUD genérico** (mínima configuración): estados, extensiones, SIMs, dispositivos y planes.
 
-Páginas **personalizadas** (con `useFormulario` y lógica propia): personas, departamentos, locales (con dos formularios: local y edificio), teléfonos, líneas, contratos (con detalle y validación cruzada de fechas), costes (con filtro por período), asignaciones (dinámicas según tipo de recurso + botón "finalizar"), usuarios (rol admin) e historial (solo lectura con filtro). A estas se suman login y el dashboard.
+Páginas **personalizadas** (con `useFormulario` y lógica propia): personas, departamentos, cargos y áreas (solo lectura, con datos sincronizados), locales (con dos formularios: local y edificio), teléfonos, líneas, contratos (con detalle y validación cruzada de fechas), costos (con filtro por período/departamento y total CUP), asignaciones (dinámicas según tipo de recurso, incluido teléfono, + botón "finalizar"), sincronización RRHH (admin), usuarios (rol admin) e historial (solo lectura con filtro). A estas se suman login y el dashboard.
 
 ### 4.10 Navegación y protección
 
-- `app/nav.ts` define grupos del menú (Directorio, Recursos, Contratos, Catálogos, etc.) e ítems con ícono Lucide. El ítem `Usuarios` tiene `soloAdmin: true`.
-- `app/router.tsx` mapea cada ruta a su página; todas dentro de `<ProtectedRoute>`. `/usuarios` adicionalmente en `<AdminRoute>`.
+- `app/nav.ts` define grupos del menú (Directorio, Recursos, Contratos, Catálogos, Costos, Asignaciones, Historial, Administración) e ítems con ícono Lucide. Los ítems `Usuarios` y `Sincronización RRHH` tienen `soloAdmin: true`.
+- `app/router.tsx` mapea cada ruta a su página; todas dentro de `<ProtectedRoute>`. `/usuarios` y `/sincronizacion` adicionalmente en `<AdminRoute>`.
 
 ### 4.11 Formateadores (`lib/formatters.ts`)
 
-- `formatFecha` (dd/mm/aaaa es-AR), `formatFechaHora`, `formatMoneda` (ARS → `$ x.xxx,xx`), `periodoActual` (AAAA-MM), `diasHasta` (días restantes para una fecha).
+- `formatFecha` (dd/mm/aaaa, locale `es-CU`), `formatFechaHora`, `formatMoneda` (CUP → `$ x,xxx.xx`, default CUP), `periodoActual` (AAAA-MM), `diasHasta` (días restantes para una fecha).
 
 ### 4.12 Estilos
 
@@ -428,24 +452,27 @@ TailwindCSS 3 con `index.css` que define las clases utilitarias personalizadas d
 
 ## 5. Base de datos
 
-El esquema actual (post eliminar proveedores) tiene **18 tablas**. Diagrama resumido de relaciones:
+El esquema actual tiene **19 tablas** (se eliminó `operadores`; se agregaron `cargos` y `areas`). Diagrama resumido de relaciones:
 
 ```
-roles 1─n usuarios
+roles       1─n usuarios
+cargos      1─n personas
+areas       1─n departamentos / personas
 departamentos 1─n personas
 departamentos 1─n departamentos (jerarquía)
-edificios 1─n locales
+edificios   1─n locales
 estados     1─n telefonos / extensiones / sims / lineas / dispositivos
-operadores  1─n sims / lineas / planes
 locales     1─n telefonos
 telefonos   1─n extensiones
 sims        1─1 lineas
 planes      1─n lineas
 contratos   1─n planes
-personas    1─n asignaciones (polimórfica a linea/dispositivo/extension)
-departamento/linea/contrato 1─n costes (opcional según imputación)
+personas    1─n asignaciones (polimórfica a linea/telefono/dispositivo/extension)
+departamento/linea 1─n costes (opcional según imputación)
 usuarios    1─n historial
 ```
+
+Nota: las líneas, SIMs y planes llevan `operador` como texto (ej. "ETECSA"), sin relación a catálogo.
 
 Detalle de tablas y columnas en la migración `001_initial.py` y en los modelos `app/models/*.py`.
 
@@ -466,10 +493,14 @@ Códigos de respuesta: `200` OK, `201` creado, `204` sin contenido (DELETE), `40
 | GET/PUT/DELETE | `/usuarios/{id}` | Ver / actualizar / eliminar usuario (admin) |
 | GET/POST | `/roles/` | Listar / crear rol (admin) |
 | GET/PUT/DELETE | `/roles/{id}` | CRUD rol (admin) |
-| GET/POST | `/personas/` | CRUD personas |
-| GET/PUT/DELETE | `/personas/{id}` | CRUD persona |
-| GET/POST | `/departamentos/` | CRUD departamentos |
-| GET/PUT/DELETE | `/departamentos/{id}` | CRUD departamento |
+| GET | `/personas/` | Listar personas (solo lectura) |
+| GET | `/personas/{id}` | Ver persona (solo lectura) |
+| GET | `/departamentos/` | Listar departamentos (solo lectura) |
+| GET | `/departamentos/{id}` | Ver departamento (solo lectura) |
+| GET | `/departamentos/raices` | Departamentos raíz (jerarquía) |
+| GET | `/departamentos/{id}/subordinados` | Subordinados de un departamento |
+| GET | `/cargos/` | Listar cargos (solo lectura) |
+| GET | `/areas/` | Listar áreas (solo lectura) |
 | GET/POST | `/edificios/` | CRUD edificios |
 | GET/PUT/DELETE | `/edificios/{id}` | CRUD edificio |
 | GET/POST | `/locales/` | CRUD locales |
@@ -477,8 +508,6 @@ Códigos de respuesta: `200` OK, `201` creado, `204` sin contenido (DELETE), `40
 | GET | `/locales/por-edificio/{edificio_id}` | Locales de un edificio |
 | GET/POST | `/estados/` | CRUD estados |
 | GET/PUT/DELETE | `/estados/{id}` | CRUD estado |
-| GET/POST | `/operadores/` | CRUD operadores |
-| GET/PUT/DELETE | `/operadores/{id}` | CRUD operador |
 | GET/POST | `/telefonos/` | CRUD teléfonos |
 | GET/PUT/DELETE | `/telefonos/{id}` | CRUD teléfono |
 | GET | `/telefonos/{id}/detalle` | Detalle con extensiones y responsable |
@@ -507,10 +536,11 @@ Códigos de respuesta: `200` OK, `201` creado, `204` sin contenido (DELETE), `40
 | GET/POST | `/costes/` | CRUD costos |
 | GET/PUT/DELETE | `/costes/{id}` | CRUD costo |
 | GET | `/historial/` | Registros (filtros `entidad`, `entidad_id`) |
+| POST | `/sincronizacion/rrhh` | Sincroniza desde ASSETS_RH (admin) → resumen de conteos |
+| POST | `/sincronizacion/rh-json` | Importa el JSON canónico de RRHH (admin) → resumen de conteos |
 | GET | `/reportes/inventario` | Contadores (líneas, teléfonos, dispositivos, personas, edificios, locales) |
-| GET | `/reportes/costes-totales` | Monto total y cantidad de períodos |
+| GET | `/reportes/costes-totales` | Importe total (CUP) y cantidad de períodos |
 | GET | `/reportes/costes-por-departamento` | Suma y cantidad por departamento |
-| GET | `/reportes/costes-por-operador` | Suma y cantidad por operador (vía línea) |
 | GET | `/reportes/costes-por-periodo` | Suma y cantidad por período |
 | GET | `/reportes/recursos-por-departamento` | Líneas y dispositivos asignados por departamento |
 
@@ -528,9 +558,12 @@ py -m venv venv                  # si no existe
 .\venv\Scripts\activate
 pip install -r requirements.txt  # y -r requirements-dev.txt si se testea
 # crear .env con: DATABASE_URL / SECRET_KEY / ACCESS_TOKEN_EXPIRE_MINUTES
+# (+ ASSETS_RRH_* si se va a sincronizar desde ASSETS_RH, ver sección 3.3)
 alembic upgrade head             # crea/aplica las tablas
 python app/seed.py               # crea rol admin y usuario admin/admin123
 uvicorn app.main:app --reload    # http://localhost:8000
+# opcional: sincronizar el directorio desde ASSETS_RH
+python scripts/sincronizar_rrhh.py --host 10.8.6.191 --port 1433 --username U --password P
 ```
 
 ### 7.2 Frontend
@@ -641,6 +674,12 @@ curl -X POST http://localhost:8000/api/v1/auth/login -H "Content-Type: applicati
 DATABASE_URL=sqlite:///./test.db
 SECRET_KEY=clave-secreta-para-desarrollo
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+# ASSETS_RRH_HABILITADO=true
+# ASSETS_RRH_SERVER=10.8.6.191
+# ASSETS_RRH_DATABASE=ASSETS_RH
+# ASSETS_RRH_USERNAME=
+# ASSETS_RRH_PASSWORD=
+# ASSETS_RRH_DRIVER=ODBC Driver 17 for SQL Server
 ```
 
 ### frontend/.env
@@ -653,6 +692,9 @@ VITE_API_URL=http://localhost:8000/api/v1
 
 ## 12. Historial de cambios relevantes
 
+- **003_integracion_institucional**: se reemplazó el catálogo de operadores por el campo fijo `operador` (ETECSA); se agregaron `cargos` y `areas`; se ampliaron `personas` y `departamentos` con datos institucionales; los costos pasan a `importe`/`observaciones` en CUP (sin moneda ni contrato); contratos y asignaciones agregan `observaciones`; se insertan estados iniciales — 17/09/2026.
+- **Sincronización RRHH**: nuevo servicio `services/institucional.py`, endpoints `/sincronizacion/rrhh` y `/sincronizacion/rh-json` (admin), script `scripts/sincronizar_rrhh.py` y pantalla "Sincronización RRHH"; personas, departamentos, cargos y áreas pasan a solo lectura — 17/09/2026.
+- **Localización**: `formatters.ts` en `es-CU` y moneda CUP; pantalla "Costes" renombrada a "Costos"; asignaciones soportan teléfonos — 17/09/2026.
 - **002_quitar_proveedores**: se eliminó el módulo "Proveedores" (tabla, endpoints, página, menú y campo en contratos) — 11/09/2026.
 - **Validación de formularios**: se creó `lib/validation.ts` y `lib/useFormulario.ts`, se migraron todas las páginas para no aceptar datos inválidos — 11/09/2026.
 - **Configuración de desarrollo**: base SQLite en `.env`, import circular de `base.py` corregido, seed de admin — 10-11/09/2026.

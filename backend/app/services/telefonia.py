@@ -2,9 +2,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.asignaciones import Asignacion
+from app.models.consumo import Consumo
 from app.models.organizacion import Local
 from app.models.personas import Persona
-from app.models.telefonia import Dispositivo, Extension, Linea, Telefono
+from app.models.telefonia import Dispositivo, Extension, Sim, Telefono
 
 
 def get_responsable_id(db: Session, tipo_recurso: str, recurso_id: int) -> int | None:
@@ -67,21 +68,30 @@ def get_telefono_detalle(db: Session, telefono_id: int) -> dict | None:
     }
 
 
-def get_linea_detalle(db: Session, linea_id: int) -> dict | None:
-    linea = db.get(Linea, linea_id)
-    if linea is None:
+def get_sim_detalle(db: Session, sim_id: int) -> dict | None:
+    sim = db.get(Sim, sim_id)
+    if sim is None:
         return None
 
-    dispositivo = db.scalar(select(Dispositivo).where(Dispositivo.linea_id == linea_id))
+    dispositivo = db.scalar(select(Dispositivo).where(Dispositivo.sim_id == sim_id))
+
+    ultimo_consumo = db.scalar(
+        select(Consumo)
+        .where(Consumo.sim_id == sim_id)
+        .order_by(Consumo.id.desc())
+        .limit(1)
+    )
 
     return {
-        "id": linea.id,
-        "numero": linea.numero,
-        "operador": linea.operador.nombre if linea.operador else None,
-        "plan": linea.plan.nombre if linea.plan else None,
-        "sim_iccid": linea.sim.iccid if linea.sim else None,
-        "sim_imsi": linea.sim.imsi if linea.sim else None,
-        "estado": linea.estado.nombre if linea.estado else None,
+        "id": sim.id,
+        "numero": sim.numero,
+        "operador": sim.operador,
+        "plan": sim.plan.nombre if sim.plan else None,
+        "iccid": sim.iccid,
+        "imsi": sim.imsi,
+        "estado": sim.estado.nombre if sim.estado else None,
         "dispositivo": f"{dispositivo.marca} {dispositivo.modelo}" if dispositivo else None,
-        "responsable": persona_nombre(db, get_responsable_id(db, "linea", linea_id)),
+        "responsable": persona_nombre(db, get_responsable_id(db, "sim", sim_id)),
+        "consumo_ultimo_periodo": float(ultimo_consumo.importe) if ultimo_consumo else None,
+        "en_exceso_ultimo_periodo": ultimo_consumo.en_exceso if ultimo_consumo else None,
     }

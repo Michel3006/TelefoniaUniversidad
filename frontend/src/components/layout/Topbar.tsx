@@ -28,7 +28,7 @@ export function Topbar() {
         <Search size={16} className="text-neutro" />
         <input
           type="search"
-          placeholder="Buscar personas, líneas, dispositivos…"
+          placeholder="Buscar personas…"
           className="w-full bg-transparent text-sm text-tinta placeholder:text-neutro focus:outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") {

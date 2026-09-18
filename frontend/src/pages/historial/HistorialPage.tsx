@@ -4,16 +4,30 @@ import { SelectField } from "../../components/ui/Field";
 import { EmptyState, ErrorState } from "../../components/ui/EmptyState";
 import { formatFechaHora } from "../../lib/formatters";
 
-const ENTIDADES = [
-  "personas", "departamentos", "edificios", "locales", "estados", "operadores",
-  "telefonos", "extensiones", "lineas", "dispositivos", "sims", "planes", "contratos", "costes",
-  "asignaciones", "usuarios",
+const ENTIDADES: { value: string; label: string }[] = [
+  { value: "personas", label: "personas" },
+  { value: "departamentos", label: "departamentos" },
+  { value: "edificios", label: "edificios" },
+  { value: "locales", label: "locales" },
+  { value: "estados", label: "estados" },
+  { value: "telefonos", label: "teléfonos" },
+  { value: "extensiones", label: "extensiones" },
+  { value: "dispositivos", label: "dispositivos" },
+  { value: "sims", label: "SIMs" },
+  { value: "planes", label: "planes" },
+  { value: "contratos", label: "contratos" },
+  { value: "costes", label: "costos" },
+  { value: "asignaciones", label: "asignaciones" },
+  { value: "facturas_etecsa", label: "facturas importadas" },
+  { value: "usuarios", label: "usuarios" },
 ];
 
 const ETIQUETA_ACCION: Record<string, string> = {
   creado: "Se creó",
   actualizado: "Se actualizó",
   eliminado: "Se eliminó",
+  desasignado: "Se desasignó",
+  importado: "Se importó",
 };
 
 export function HistorialPage() {
@@ -27,7 +41,7 @@ export function HistorialPage() {
         <div className="w-56">
           <SelectField
             label="Entidad"
-            options={ENTIDADES.map((e) => ({ value: e, label: e }))}
+            options={ENTIDADES}
             value={entidad}
             onChange={(e) => setEntidad(e.target.value)}
             placeholder="Todas"

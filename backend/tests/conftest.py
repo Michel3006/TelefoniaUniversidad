@@ -135,6 +135,22 @@ def gestor_user(db: Session, gestor_role: Rol) -> Usuario:
 
 
 @pytest.fixture()
+def consulta_user(db: Session, consulta_role: Rol) -> Usuario:
+    user = db.query(Usuario).filter(Usuario.username == "consulta").first()
+    if user is None:
+        user = Usuario(
+            username="consulta",
+            email="consulta@test.com",
+            password_hash=hash_password("consulta123"),
+            rol_id=consulta_role.id,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+@pytest.fixture()
 def admin_token(admin_user: Usuario) -> str:
     return create_access_token(admin_user.username)
 
@@ -145,6 +161,11 @@ def gestor_token(gestor_user: Usuario) -> str:
 
 
 @pytest.fixture()
+def consulta_token(consulta_user: Usuario) -> str:
+    return create_access_token(consulta_user.username)
+
+
+@pytest.fixture()
 def auth_headers(admin_token: str) -> dict:
     return {"Authorization": f"Bearer {admin_token}"}
 
@@ -152,3 +173,8 @@ def auth_headers(admin_token: str) -> dict:
 @pytest.fixture()
 def gestor_headers(gestor_token: str) -> dict:
     return {"Authorization": f"Bearer {gestor_token}"}
+
+
+@pytest.fixture()
+def consulta_headers(consulta_token: str) -> dict:
+    return {"Authorization": f"Bearer {consulta_token}"}

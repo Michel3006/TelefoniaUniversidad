@@ -3,19 +3,20 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "../../components/ui/DataTable";
 import { SlideOver } from "../../components/ui/SlideOver";
 import { Button } from "../../components/ui/Button";
-import { SelectField, TextField } from "../../components/ui/Field";
+import { SelectField, TextAreaField, TextField } from "../../components/ui/Field";
 import { EmptyState, ErrorState } from "../../components/ui/EmptyState";
 import { useToast } from "../../components/ui/Toast";
 import { ApiError, api } from "../../lib/api";
 import { useFormulario } from "../../lib/useFormulario";
 import { toPayload, type ReglaCampo } from "../../lib/validation";
-import { useAsignacionesActivas, useCrudMutations, useDispositivos, useExtensiones, useLineas, usePersonas } from "../../lib/queries";
+import { useAsignacionesActivas, useCrudMutations, useDispositivos, useExtensiones, usePersonas, useSims, useTelefonos } from "../../lib/queries";
 import type { Asignacion } from "../../lib/types";
 import { formatFecha } from "../../lib/formatters";
 import { useQueryClient } from "@tanstack/react-query";
 
 const TIPOS = [
-  { value: "linea", label: "Línea" },
+  { value: "sim", label: "SIM" },
+  { value: "telefono", label: "Teléfono" },
   { value: "dispositivo", label: "Dispositivo" },
   { value: "extension", label: "Extensión" },
 ];
@@ -25,13 +26,15 @@ const REGLAS: ReglaCampo[] = [
   { name: "tipo_recurso", label: "Tipo de recurso", tipo: "select", required: true },
   { name: "recurso_id", label: "Recurso", tipo: "select", required: true },
   { name: "fecha_inicio", label: "Fecha de inicio", tipo: "date", required: true },
+  { name: "observaciones", label: "Observaciones", tipo: "text", max: 500 },
 ];
 
 export function AsignacionesPage() {
   const [verHistoricas, setVerHistoricas] = useState(false);
   const activas = useAsignacionesActivas();
   const personas = usePersonas();
-  const lineas = useLineas();
+  const sims = useSims();
+  const telefonos = useTelefonos();
   const dispositivos = useDispositivos();
   const extensiones = useExtensiones();
   const { crear } = useCrudMutations<Asignacion>("asignaciones", "/asignaciones");
@@ -41,7 +44,7 @@ export function AsignacionesPage() {
   const [panel, setPanel] = useState(false);
   const { valores, errores, setValor, setValores, validarTodos } = useFormulario(REGLAS);
   const abrirPanel = () => {
-    setValores({ persona_id: "", tipo_recurso: "linea", recurso_id: "", fecha_inicio: new Date().toISOString().slice(0, 10) });
+    setValores({ persona_id: "", tipo_recurso: "sim", recurso_id: "", fecha_inicio: new Date().toISOString().slice(0, 10), observaciones: "" });
     setPanel(true);
   };
 
@@ -51,7 +54,11 @@ export function AsignacionesPage() {
   };
 
   const nombreRecurso = (tipo: string, id: number) => {
-    if (tipo === "linea") return lineas.data?.find((l) => l.id === id)?.numero ?? `#${id}`;
+    if (tipo === "sim") {
+      const s = sims.data?.find((x) => x.id === id);
+      return s ? s.numero || s.iccid || `SIM ${s.id}` : `#${id}`;
+    }
+    if (tipo === "telefono") return telefonos.data?.find((t) => t.id === id)?.numero ?? `#${id}`;
     if (tipo === "dispositivo") {
       const d = dispositivos.data?.find((x) => x.id === id);
       return d ? `${d.marca} ${d.modelo}` : `#${id}`;
@@ -94,8 +101,10 @@ export function AsignacionesPage() {
     }
   }
 
-  const opcionesRecurso = valores.tipo_recurso === "linea"
-    ? (lineas.data ?? []).map((l) => ({ value: l.id, label: l.numero }))
+  const opcionesRecurso = valores.tipo_recurso === "sim"
+    ? (sims.data ?? []).map((s) => ({ value: s.id, label: s.numero || s.iccid || `SIM ${s.id}` }))
+    : valores.tipo_recurso === "telefono"
+    ? (telefonos.data ?? []).map((t) => ({ value: t.id, label: t.numero }))
     : valores.tipo_recurso === "dispositivo"
     ? (dispositivos.data ?? []).map((d) => ({ value: d.id, label: `${d.marca} ${d.modelo}` }))
     : (extensiones.data ?? []).map((e) => ({ value: e.id, label: e.numero }));
@@ -179,6 +188,13 @@ export function AsignacionesPage() {
             value={valores.fecha_inicio}
             error={errores.fecha_inicio}
             onChange={(e) => setValor("fecha_inicio", e.target.value)}
+          />
+          <TextAreaField
+            label="Observaciones"
+            maxLength={500}
+            value={valores.observaciones ?? ""}
+            error={errores.observaciones}
+            onChange={(e) => setValor("observaciones", e.target.value)}
           />
         </div>
       </SlideOver>

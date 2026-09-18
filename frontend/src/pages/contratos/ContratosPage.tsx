@@ -16,7 +16,7 @@ import { diasHasta, formatFecha, formatMoneda } from "../../lib/formatters";
 
 const REGLAS: ReglaCampo[] = [
   { name: "numero", label: "Número", tipo: "text", required: true, max: 50 },
-  { name: "descripcion", label: "Descripción", tipo: "textarea", max: 500 },
+  { name: "observaciones", label: "Observaciones", tipo: "textarea", max: 500 },
   { name: "fecha_inicio", label: "Fecha de inicio", tipo: "date" },
   { name: "fecha_vencimiento", label: "Fecha de vencimiento", tipo: "date" },
 ];
@@ -122,7 +122,7 @@ export function ContratosPage() {
                 <div className="flex justify-between"><dt className="text-neutro">Inicio</dt><dd className="dato">{formatFecha(detalle.data.fecha_inicio)}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">Vencimiento</dt><dd className="dato">{formatFecha(detalle.data.fecha_vencimiento)}</dd></div>
               </dl>
-              {detalle.data.descripcion && <p className="mt-2 text-sm text-neutro">{detalle.data.descripcion}</p>}
+              {detalle.data.observaciones && <p className="mt-2 text-sm text-neutro">{detalle.data.observaciones}</p>}
             </div>
             <div>
               <p className="text-sm font-medium text-tinta">Planes incluidos</p>
@@ -166,7 +166,7 @@ export function ContratosPage() {
           <TextField label="Número" required dato maxLength={50} value={valores.numero ?? ""} error={errores.numero} onChange={(e) => setValor("numero", e.target.value)} onBlur={() => validarUno("numero")} />
           <TextField label="Fecha de inicio" type="date" dato value={valores.fecha_inicio ?? ""} error={errores.fecha_inicio} onChange={(e) => setValor("fecha_inicio", e.target.value)} onBlur={() => validarUno("fecha_inicio")} />
           <TextField label="Fecha de vencimiento" type="date" dato value={valores.fecha_vencimiento ?? ""} error={errores.fecha_vencimiento} onChange={(e) => { setValor("fecha_vencimiento", e.target.value); marcarError("fecha_vencimiento", null); }} onBlur={() => validarUno("fecha_vencimiento")} />
-          <TextAreaField label="Descripción" maxLength={500} value={valores.descripcion ?? ""} error={errores.descripcion} onChange={(e) => setValor("descripcion", e.target.value)} onBlur={() => validarUno("descripcion")} />
+          <TextAreaField label="Observaciones" maxLength={500} value={valores.observaciones ?? ""} error={errores.observaciones} onChange={(e) => setValor("observaciones", e.target.value)} onBlur={() => validarUno("observaciones")} />
         </div>
       </SlideOver>
 

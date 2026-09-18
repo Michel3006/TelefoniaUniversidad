@@ -16,20 +16,46 @@ export interface Usuario {
   rol: Rol;
 }
 
+export interface Cargo {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
+export interface Area {
+  id: number;
+  codigo: string;
+  nombre: string;
+}
+
 export interface Persona {
   id: number;
   nombre: string;
   apellido: string;
+  apellido_2: string | null;
   documento: string | null;
   email: string | null;
   telefono: string | null;
+  exttelef: string | null;
   departamento_id: number | null;
+  id_empleado: string | null;
+  id_expediente: string | null;
+  id_ccosto: string | null;
+  cargo_id: number | null;
+  area_id: number | null;
+  baja: boolean;
 }
 
 export interface Departamento {
   id: number;
   nombre: string;
   departamento_padre_id: number | null;
+  id_direccion: string | null;
+  nivel: number | null;
+  id_area: number | null;
+  fecha_alta: string | null;
+  fecha_baja: string | null;
+  baja: boolean;
 }
 
 export interface Edificio {
@@ -47,12 +73,6 @@ export interface Local {
 }
 
 export interface Estado {
-  id: number;
-  nombre: string;
-  descripcion: string | null;
-}
-
-export interface Operador {
   id: number;
   nombre: string;
   descripcion: string | null;
@@ -76,18 +96,11 @@ export interface Extension {
 
 export interface Sim {
   id: number;
-  iccid: string;
-  imsi: string | null;
-  operador_id: number | null;
-  estado_id: number | null;
-}
-
-export interface Linea {
-  id: number;
   numero: string;
-  operador_id: number | null;
+  iccid: string | null;
+  imsi: string | null;
+  operador: string;
   plan_id: number | null;
-  sim_id: number | null;
   estado_id: number | null;
 }
 
@@ -96,15 +109,16 @@ export interface Dispositivo {
   marca: string;
   modelo: string;
   imei: string;
-  linea_id: number | null;
+  sim_id: number | null;
   local_id: number | null;
   estado_id: number | null;
+  observaciones: string | null;
 }
 
 export interface Contrato {
   id: number;
   numero: string;
-  descripcion: string | null;
+  observaciones: string | null;
   fecha_inicio: string | null;
   fecha_vencimiento: string | null;
 }
@@ -112,7 +126,7 @@ export interface Contrato {
 export interface Plan {
   id: number;
   nombre: string;
-  operador_id: number | null;
+  operador: string;
   contrato_id: number | null;
   coste_mensual: string | null;
   descripcion: string | null;
@@ -121,21 +135,20 @@ export interface Plan {
 export interface Coste {
   id: number;
   periodo: string;
-  concepto: string;
-  monto: string;
-  moneda: string;
+  importe: string;
+  observaciones: string | null;
   departamento_id: number | null;
-  linea_id: number | null;
-  contrato_id: number | null;
+  sim_id: number | null;
 }
 
 export interface Asignacion {
   id: number;
   persona_id: number;
-  tipo_recurso: "linea" | "dispositivo" | "extension" | string;
+  tipo_recurso: "sim" | "dispositivo" | "extension" | "telefono" | string;
   recurso_id: number;
   fecha_inicio: string;
   fecha_fin: string | null;
+  observaciones: string | null;
 }
 
 export interface HistorialItem {
@@ -169,16 +182,18 @@ export interface TelefonoDetalle {
   extensiones: ExtensionResumen[];
 }
 
-export interface LineaDetalle {
+export interface SimDetalle {
   id: number;
   numero: string;
   operador: string | null;
   plan: string | null;
-  sim_iccid: string | null;
-  sim_imsi: string | null;
+  iccid: string | null;
+  imsi: string | null;
   estado: string | null;
   dispositivo: string | null;
   responsable: string | null;
+  consumo_ultimo_periodo: number | null;
+  en_exceso_ultimo_periodo: boolean | null;
 }
 
 export interface PlanResumen {
@@ -191,7 +206,7 @@ export interface PlanResumen {
 export interface ContratoDetalle {
   id: number;
   numero: string;
-  descripcion: string | null;
+  observaciones: string | null;
   fecha_inicio: string | null;
   fecha_vencimiento: string | null;
   planes: PlanResumen[];
@@ -199,7 +214,7 @@ export interface ContratoDetalle {
 
 export interface InventarioReporte {
   telefonos_fijos: number;
-  lineas_moviles: number;
+  sims: number;
   dispositivos: number;
   edificios: number;
   locales: number;
@@ -207,7 +222,7 @@ export interface InventarioReporte {
 }
 
 export interface CostesTotalesReporte {
-  monto_total: number | null;
+  importe_total: number | null;
   periodos: number;
 }
 
@@ -217,14 +232,137 @@ export interface CostePorDepartamento {
   cantidad: number;
 }
 
-export interface CostePorOperador {
-  operador_id: number | null;
-  total: string | number;
-  cantidad: number;
-}
-
 export interface CostePorPeriodo {
   periodo: string;
   total: string | number;
   cantidad: number;
+}
+
+export interface SincronizacionResumen {
+  cargos: number;
+  areas: number;
+  unidades: number;
+  empleados: number;
+}
+
+// --- Consumo ETECSA, límites y autorizaciones ---
+
+export interface FacturaEtecsa {
+  id: number;
+  no_factura: string;
+  numero_cliente: string | null;
+  folio: string | null;
+  periodo: string;
+  fecha_factura: string | null;
+  fecha_vencimiento: string | null;
+  moneda: string;
+  cuota_total: string | null;
+  consumo_total: string | null;
+  comision_total: string | null;
+  impuesto_total: string | null;
+  facturado_total: string | null;
+  atraso: string | null;
+  total_a_pagar: string | null;
+  consumo_voz: string | null;
+  consumo_sms: string | null;
+  procesado_en: string;
+}
+
+export interface Consumo {
+  id: number;
+  factura_id: number;
+  sim_id: number | null;
+  numero_detectado: string;
+  cuota: string;
+  consumo: string;
+  comision: string;
+  impuesto: string;
+  importe: string;
+  en_exceso: boolean;
+  con_autorizacion: boolean;
+  limite_normal: string | null;
+  limite_efectivo: string | null;
+}
+
+export interface ImportacionResumen {
+  factura_id: number;
+  no_factura: string;
+  periodo: string;
+  procesados: number;
+  asociados: number;
+  no_asociados: number;
+  excesos: number;
+  numeros_no_asociados: string[];
+}
+
+export interface LimiteConsumo {
+  id: number;
+  sim_id: number;
+  valor_limite: string;
+  vigente_desde: string;
+  vigente_hasta: string | null;
+  observaciones: string | null;
+}
+
+export interface AutorizacionExceso {
+  id: number;
+  sim_id: number;
+  persona_id: number;
+  limite_autorizado: string;
+  fecha_inicio: string;
+  fecha_fin: string | null;
+  motivo: string | null;
+  responsable: string | null;
+  observaciones: string | null;
+}
+
+// --- Reportes de consumo ---
+
+export interface ConsumoPorPeriodo {
+  periodo: string;
+  registros: number;
+  consumo: string | number;
+  importe: string | number;
+  excesos: number;
+  excesos_autorizados: number;
+  no_asociados: number;
+}
+
+export interface ExcesoReporte {
+  id: number;
+  numero: string;
+  sim_id: number | null;
+  periodo: string;
+  consumo: string;
+  importe: string;
+  limite_normal: string | null;
+  limite_efectivo: string | null;
+  en_exceso: boolean;
+  con_autorizacion: boolean;
+}
+
+export interface RecursoSuelto {
+  tipo: string;
+  id: number;
+  descripcion: string;
+}
+
+export interface RecursosSinAsignar {
+  sims: RecursoSuelto[];
+  dispositivos: RecursoSuelto[];
+  telefonos: RecursoSuelto[];
+  extensiones: RecursoSuelto[];
+}
+
+export interface RecursoPersona {
+  tipo_recurso: string;
+  recurso_id: number;
+  fecha_inicio: string;
+}
+
+export interface RecursosPorPersona {
+  persona_id: number;
+  nombre: string;
+  departamento_id: number | null;
+  recursos: RecursoPersona[];
 }

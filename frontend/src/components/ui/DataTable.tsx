@@ -7,6 +7,7 @@ interface DataTableProps<T> {
   data: T[];
   onVer?: (item: T) => void;
   onEditar?: (item: T) => void;
+  onBorrar?: (item: T) => void;
   vacioTitulo?: string;
   vacioDescripcion?: string;
 }
@@ -14,11 +15,12 @@ interface DataTableProps<T> {
 // Tabla de la casa: encabezados en altas y bajas normales, filete fino
 // entre filas, sin cebra ni tarjetas. La columna de acciones aparece
 // recién al pasar el mouse por la fila.
-export function DataTable<T extends { id: number }>({
+export function DataTable<T>({
   columns,
   data,
   onVer,
   onEditar,
+  onBorrar,
   vacioTitulo = "Todavía no hay datos cargados.",
   vacioDescripcion,
 }: DataTableProps<T>) {
@@ -43,7 +45,7 @@ export function DataTable<T extends { id: number }>({
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </th>
               ))}
-              {(onVer || onEditar) && <th className="px-3 py-2" />}
+              {(onVer || onEditar || onBorrar) && <th className="px-3 py-2" />}
             </tr>
           ))}
         </thead>
@@ -55,7 +57,7 @@ export function DataTable<T extends { id: number }>({
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
-              {(onVer || onEditar) && (
+              {(onVer || onEditar || onBorrar) && (
                 <td className="whitespace-nowrap px-3 py-2.5 text-right text-sm">
                   <span className="invisible flex justify-end gap-3 group-hover:visible">
                     {onVer && (
@@ -72,6 +74,14 @@ export function DataTable<T extends { id: number }>({
                         className="font-medium text-tinta underline-offset-2 hover:underline"
                       >
                         Editar
+                      </button>
+                    )}
+                    {onBorrar && (
+                      <button
+                        onClick={() => onBorrar(row.original)}
+                        className="font-medium text-linea-baja underline-offset-2 hover:underline"
+                      >
+                        Eliminar
                       </button>
                     )}
                   </span>

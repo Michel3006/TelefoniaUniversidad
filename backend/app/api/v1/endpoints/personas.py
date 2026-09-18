@@ -1,9 +1,9 @@
-from fastapi import APIRouter
-from fastapi import Depends, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.crud import build_crud
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.personas import Persona
 from app.schemas.personas import PersonaCreate, PersonaRead, PersonaUpdate
@@ -22,11 +22,16 @@ def buscar(
             or_(
                 Persona.nombre.ilike(termino),
                 Persona.apellido.ilike(termino),
+                Persona.apellido_2.ilike(termino),
                 Persona.email.ilike(termino),
                 Persona.documento.ilike(termino),
+                Persona.id_empleado.ilike(termino),
             )
         )
     ).all()
 
 
-build_crud(router, Persona, PersonaCreate, PersonaUpdate, PersonaRead, entidad="personas")
+build_crud(
+    router, Persona, PersonaCreate, PersonaUpdate, PersonaRead, entidad="personas",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)

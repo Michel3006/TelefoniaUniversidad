@@ -44,9 +44,11 @@ class ExtensionRead(ExtensionBase):
 
 
 class SimBase(BaseModel):
-    iccid: str
+    numero: str
+    iccid: str | None = None
     imsi: str | None = None
-    operador_id: int | None = None
+    operador: str = "ETECSA"
+    plan_id: int | None = None
     estado_id: int | None = None
 
 
@@ -64,35 +66,14 @@ class SimRead(SimBase):
     id: int
 
 
-class LineaBase(BaseModel):
-    numero: str
-    operador_id: int | None = None
-    plan_id: int | None = None
-    sim_id: int | None = None
-    estado_id: int | None = None
-
-
-class LineaCreate(LineaBase):
-    pass
-
-
-class LineaUpdate(LineaBase):
-    pass
-
-
-class LineaRead(LineaBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-
-
 class DispositivoBase(BaseModel):
     marca: str
     modelo: str
     imei: str
-    linea_id: int | None = None
+    sim_id: int | None = None
     local_id: int | None = None
     estado_id: int | None = None
+    observaciones: str | None = None
 
 
 class DispositivoCreate(DispositivoBase):
@@ -126,13 +107,15 @@ class TelefonoDetalle(BaseModel):
     extensiones: list[ExtensionResumen] = []
 
 
-class LineaDetalle(BaseModel):
+class SimDetalle(BaseModel):
     id: int
     numero: str
     operador: str | None = None
     plan: str | None = None
-    sim_iccid: str | None = None
-    sim_imsi: str | None = None
+    iccid: str | None = None
+    imsi: str | None = None
     estado: str | None = None
     dispositivo: str | None = None
     responsable: str | None = None
+    consumo_ultimo_periodo: float | None = None
+    en_exceso_ultimo_periodo: bool | None = None

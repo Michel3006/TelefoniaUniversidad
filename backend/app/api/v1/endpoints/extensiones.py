@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.v1.crud import build_crud
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.telefonia import Extension
 from app.schemas.telefonia import ExtensionCreate, ExtensionRead, ExtensionUpdate
@@ -21,7 +22,10 @@ def buscar(
     ).all()
 
 
-build_crud(router, Extension, ExtensionCreate, ExtensionUpdate, ExtensionRead, entidad="extensiones")
+build_crud(
+    router, Extension, ExtensionCreate, ExtensionUpdate, ExtensionRead, entidad="extensiones",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)
 
 
 @router.get("/por-telefono/{telefono_id}", response_model=list[ExtensionRead])

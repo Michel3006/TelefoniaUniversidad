@@ -3,13 +3,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.v1.crud import build_crud
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.planes import Contrato, Plan
 from app.schemas.planes import ContratoCreate, ContratoRead, ContratoUpdate, PlanRead
 
 router = APIRouter(prefix="/contratos", tags=["contratos"])
 
-build_crud(router, Contrato, ContratoCreate, ContratoUpdate, ContratoRead, entidad="contratos")
+build_crud(
+    router, Contrato, ContratoCreate, ContratoUpdate, ContratoRead, entidad="contratos",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)
 
 
 @router.get("/{contrato_id}/detalle")
@@ -23,14 +27,14 @@ def detalle(contrato_id: int, db: Session = Depends(get_db)):
     return {
         "id": contrato.id,
         "numero": contrato.numero,
-        "descripcion": contrato.descripcion,
+        "observaciones": contrato.observaciones,
         "fecha_inicio": contrato.fecha_inicio,
         "fecha_vencimiento": contrato.fecha_vencimiento,
         "planes": [
             {
                 "id": p.id,
                 "nombre": p.nombre,
-                "operador": p.operador.nombre if p.operador else None,
+                "operador": p.operador,
                 "coste_mensual": p.coste_mensual,
             }
             for p in planes

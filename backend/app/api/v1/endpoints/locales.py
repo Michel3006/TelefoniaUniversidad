@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.v1.crud import build_crud
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.organizacion import Edificio, Local
 from app.schemas.organizacion import (
@@ -17,8 +18,14 @@ from app.schemas.organizacion import (
 edificios_router = APIRouter(prefix="/edificios", tags=["edificios"])
 locales_router = APIRouter(prefix="/locales", tags=["locales"])
 
-build_crud(edificios_router, Edificio, EdificioCreate, EdificioUpdate, EdificioRead, entidad="edificios")
-build_crud(locales_router, Local, LocalCreate, LocalUpdate, LocalRead, entidad="locales")
+build_crud(
+    edificios_router, Edificio, EdificioCreate, EdificioUpdate, EdificioRead, entidad="edificios",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)
+build_crud(
+    locales_router, Local, LocalCreate, LocalUpdate, LocalRead, entidad="locales",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)
 
 
 @locales_router.get("/por-edificio/{edificio_id}", response_model=list[LocalRead])

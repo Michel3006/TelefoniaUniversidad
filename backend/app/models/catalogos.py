@@ -10,11 +10,3 @@ class Estado(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     descripcion: Mapped[str | None] = mapped_column(Text)
-
-
-class Operador(Base):
-    __tablename__ = "operadores"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    descripcion: Mapped[str | None] = mapped_column(Text)

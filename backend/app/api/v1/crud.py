@@ -27,7 +27,17 @@ def build_crud(
     update_schema: type[BaseModel],
     read_schema: type[BaseModel],
     entidad: str | None = None,
+    write_dependency: Any = None,
 ) -> None:
+    """Registra el CRUD generico sobre `router`.
+
+    `write_dependency` (opcional), si se pasa, es un `Depends(...)` que se
+    exige SOLO en create/update/delete (permite que la lectura quede
+    disponible para roles de consulta mientras la escritura requiere
+    admin/gestor).
+    """
+    write_deps = [write_dependency] if write_dependency is not None else []
+
     @router.get("/", response_model=list[read_schema])
     def list_items(
         skip: int = Query(0, ge=0),
@@ -43,7 +53,7 @@ def build_crud(
             raise HTTPException(status_code=404, detail="No existe el recurso")
         return item
 
-    @router.post("/", response_model=read_schema, status_code=status.HTTP_201_CREATED)
+    @router.post("/", response_model=read_schema, status_code=status.HTTP_201_CREATED, dependencies=write_deps)
     def create_item(
         payload: create_schema,
         request: Request,
@@ -65,7 +75,7 @@ def build_crud(
         db.refresh(item)
         return item
 
-    @router.put("/{item_id}", response_model=read_schema)
+    @router.put("/{item_id}", response_model=read_schema, dependencies=write_deps)
     def update_item(
         item_id: int,
         payload: update_schema,
@@ -94,7 +104,7 @@ def build_crud(
         db.refresh(item)
         return item
 
-    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+    @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=write_deps)
     def delete_item(
         item_id: int,
         request: Request,

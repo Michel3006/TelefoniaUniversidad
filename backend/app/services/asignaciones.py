@@ -6,6 +6,33 @@ from sqlalchemy.orm import Session
 from app.models.asignaciones import Asignacion
 
 
+def _model_map():
+    # import diferido para evitar ciclos; es el UNICO lugar del sistema
+    # donde se define la lista de tipos de recurso validos.
+    from app.models.telefonia import Dispositivo, Extension, Sim, Telefono
+
+    return {
+        "sim": Sim,
+        "dispositivo": Dispositivo,
+        "extension": Extension,
+        "telefono": Telefono,
+    }
+
+
+TIPOS_RECURSO = ("sim", "dispositivo", "extension", "telefono")
+
+
+def tipo_recurso_valido(tipo_recurso: str) -> bool:
+    return tipo_recurso in _model_map()
+
+
+def recurso_existe(db: Session, tipo_recurso: str, recurso_id: int) -> bool:
+    model = _model_map().get(tipo_recurso)
+    if model is None:
+        return False
+    return db.get(model, recurso_id) is not None
+
+
 def tiene_asignacion_activa(
     db: Session,
     tipo_recurso: str,
@@ -67,14 +94,7 @@ def recursos_disponibles(
     if exclude_ids:
         subquery = subquery.where(Asignacion.recurso_id.notin_(exclude_ids))
 
-    from app.models.telefonia import Dispositivo, Extension, Linea
-
-    model_map = {
-        "linea": Linea,
-        "dispositivo": Dispositivo,
-        "extension": Extension,
-    }
-    model = model_map.get(tipo_recurso)
+    model = _model_map().get(tipo_recurso)
     if model is None:
         return []
 

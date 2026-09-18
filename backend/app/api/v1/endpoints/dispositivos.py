@@ -3,6 +3,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.crud import build_crud
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.telefonia import Dispositivo
 from app.schemas.telefonia import DispositivoCreate, DispositivoRead, DispositivoUpdate
@@ -27,4 +28,7 @@ def buscar(
     ).all()
 
 
-build_crud(router, Dispositivo, DispositivoCreate, DispositivoUpdate, DispositivoRead, entidad="dispositivos")
+build_crud(
+    router, Dispositivo, DispositivoCreate, DispositivoUpdate, DispositivoRead, entidad="dispositivos",
+    write_dependency=Depends(require_role("admin", "gestor")),
+)

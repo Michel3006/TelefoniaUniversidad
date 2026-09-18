@@ -11,8 +11,9 @@ import { useToast } from "../../components/ui/Toast";
 import { ApiError } from "../../lib/api";
 import { useFormulario } from "../../lib/useFormulario";
 import { toPayload, type ReglaCampo } from "../../lib/validation";
-import { useCrudMutations, useEstados, useLocales, useTelefonoDetalle, useTelefonos } from "../../lib/queries";
+import { useCrudMutations, useBuscarTelefonos, useEstados, useLocales, useTelefonoDetalle, useTelefonos } from "../../lib/queries";
 import type { Telefono } from "../../lib/types";
+import { BuscadorRecurso } from "../../components/ui/BuscadorRecurso";
 
 const REGLAS: ReglaCampo[] = [
   { name: "numero", label: "Número", tipo: "telefono", required: true, max: 30 },
@@ -98,6 +99,13 @@ export function TelefonosPage() {
         <h1 className="text-lg font-semibold text-tinta">Teléfonos</h1>
         <Button variant="primario" onClick={abrirCrear}>Crear</Button>
       </div>
+
+      <BuscadorRecurso<Telefono>
+        placeholder="Buscar por número…"
+        useBuscar={useBuscarTelefonos}
+        obtenerId={(t) => t.id}
+        obtenerEtiqueta={(t) => t.numero}
+      />
 
       {telefonos.isLoading && <EmptyState titulo="Cargando…" />}
       {telefonos.isError && <ErrorState mensaje={(telefonos.error as Error)?.message ?? ""} onReintentar={() => telefonos.refetch()} />}

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 class ContratoBase(BaseModel):
     numero: str
-    descripcion: str | None = None
+    observaciones: str | None = None
     fecha_inicio: date | None = None
     fecha_vencimiento: date | None = None
 
@@ -27,7 +27,7 @@ class ContratoRead(ContratoBase):
 
 class PlanBase(BaseModel):
     nombre: str
-    operador_id: int | None = None
+    operador: str = "ETECSA"
     contrato_id: int | None = None
     coste_mensual: Decimal | None = None
     descripcion: str | None = None

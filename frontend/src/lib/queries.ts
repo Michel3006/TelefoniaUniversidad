@@ -3,11 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, qs } from "./api";
 import type {
+  Area,
   Asignacion,
+  AutorizacionExceso,
+  Cargo,
+  Consumo,
+  ConsumoPorPeriodo,
   Contrato,
   ContratoDetalle,
   CostePorDepartamento,
-  CostePorOperador,
   CostePorPeriodo,
   Coste,
   CostesTotalesReporte,
@@ -15,17 +19,22 @@ import type {
   Dispositivo,
   Edificio,
   Estado,
+  ExcesoReporte,
   Extension,
+  FacturaEtecsa,
   HistorialItem,
+  ImportacionResumen,
   InventarioReporte,
-  Linea,
-  LineaDetalle,
+  LimiteConsumo,
   Local,
-  Operador,
   Persona,
   Plan,
+  RecursosPorPersona,
+  RecursosSinAsignar,
   Rol,
   Sim,
+  SimDetalle,
+  SincronizacionResumen,
   Telefono,
   TelefonoDetalle,
   Usuario,
@@ -42,14 +51,14 @@ function listado<T>(key: string, path: string) {
 }
 
 export const useEstados = listado<Estado>("estados", "/estados/");
-export const useOperadores = listado<Operador>("operadores", "/operadores/");
 export const usePersonas = listado<Persona>("personas", "/personas/");
 export const useDepartamentos = listado<Departamento>("departamentos", "/departamentos/");
+export const useCargos = listado<Cargo>("cargos", "/cargos/");
+export const useAreas = listado<Area>("areas", "/areas/");
 export const useEdificios = listado<Edificio>("edificios", "/edificios/");
 export const useLocales = listado<Local>("locales", "/locales/");
 export const useTelefonos = listado<Telefono>("telefonos", "/telefonos/");
 export const useExtensiones = listado<Extension>("extensiones", "/extensiones/");
-export const useLineas = listado<Linea>("lineas", "/lineas/");
 export const useDispositivos = listado<Dispositivo>("dispositivos", "/dispositivos/");
 export const useSims = listado<Sim>("sims", "/sims/");
 export const usePlanes = listado<Plan>("planes", "/planes/");
@@ -57,6 +66,94 @@ export const useContratos = listado<Contrato>("contratos", "/contratos/");
 export const useCostes = listado<Coste>("costes", "/costes/");
 export const useRoles = listado<Rol>("roles", "/roles/");
 export const useUsuarios = listado<Usuario>("usuarios", "/usuarios/");
+
+// --- Consumo ETECSA ---
+
+export const useFacturas = listado<FacturaEtecsa>("facturas", "/facturas-etecsa/");
+export const useLimites = listado<LimiteConsumo>("limites", "/limites/");
+export const useAutorizaciones = listado<AutorizacionExceso>("autorizaciones", "/autorizaciones/");
+
+export function useConsumos(params: { sim_id?: number; periodo?: string }) {
+  return useQuery({
+    queryKey: ["consumo", "list", params],
+    queryFn: () => api<Consumo[]>(`/consumo/${qs({ ...params, limit: LIST_LIMIT })}`),
+  });
+}
+
+export function useConsumoNoAsociados(periodo?: string) {
+  return useQuery({
+    queryKey: ["consumo", "no-asociados", periodo ?? null],
+    queryFn: () => api<Consumo[]>(`/consumo/no-asociados${qs({ periodo, limit: LIST_LIMIT })}`),
+  });
+}
+
+export function useConsumoExcesos(periodo?: string, autorizado?: boolean) {
+  return useQuery({
+    queryKey: ["consumo", "excesos", periodo ?? null, autorizado ?? null],
+    queryFn: () =>
+      api<Consumo[]>(
+        `/consumo/excesos${qs({ periodo, autorizado: autorizado === undefined ? undefined : String(autorizado), limit: LIST_LIMIT })}`
+      ),
+  });
+}
+
+export function useImportarFactura() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ contenido, nombre }: { contenido: Blob; nombre: string }) => {
+      const fd = new FormData();
+      fd.append("archivo", new File([contenido], nombre, { type: "application/pdf" }));
+      return api<ImportacionResumen>("/consumo/importar-pdf", { method: "POST", formData: fd });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["facturas"] });
+      qc.invalidateQueries({ queryKey: ["consumo"] });
+      qc.invalidateQueries({ queryKey: ["reportes"] });
+    },
+  });
+}
+
+// --- Búsquedas rápidas ---
+
+export function useBuscarDispositivos(q: string) {
+  return useQuery({
+    queryKey: ["dispositivos", "buscar", q],
+    queryFn: () => api<Dispositivo[]>(`/dispositivos/buscar${qs({ q })}`),
+    enabled: q.trim().length > 0,
+  });
+}
+
+export function useBuscarExtensiones(q: string) {
+  return useQuery({
+    queryKey: ["extensiones", "buscar", q],
+    queryFn: () => api<Extension[]>(`/extensiones/buscar${qs({ q })}`),
+    enabled: q.trim().length > 0,
+  });
+}
+
+export function useBuscarTelefonos(q: string) {
+  return useQuery({
+    queryKey: ["telefonos", "buscar", q],
+    queryFn: () => api<Telefono[]>(`/telefonos/buscar${qs({ q })}`),
+    enabled: q.trim().length > 0,
+  });
+}
+
+export function useBuscarSims(q: string) {
+  return useQuery({
+    queryKey: ["sims", "buscar", q],
+    queryFn: () => api<Sim[]>(`/sims/buscar${qs({ q })}`),
+    enabled: q.trim().length > 0,
+  });
+}
+
+export function useBuscarPersonas(q: string) {
+  return useQuery({
+    queryKey: ["personas", "buscar", q],
+    queryFn: () => api<Persona[]>(`/personas/buscar${qs({ q })}`),
+    enabled: q.trim().length > 0,
+  });
+}
 
 export function useAsignacionesActivas() {
   return useQuery({
@@ -82,10 +179,10 @@ export function useAsignacionesPorRecurso(tipo: string | null, recursoId: number
   });
 }
 
-export function useLineaDetalle(id: number | null) {
+export function useSimDetalle(id: number | null) {
   return useQuery({
-    queryKey: ["lineas", "detalle", id],
-    queryFn: () => api<LineaDetalle>(`/lineas/${id}/detalle`),
+    queryKey: ["sims", "detalle", id],
+    queryFn: () => api<SimDetalle>(`/sims/${id}/detalle`),
     enabled: id != null,
   });
 }
@@ -141,17 +238,56 @@ export function useReporteCostesPorDepartamento() {
   });
 }
 
-export function useReporteCostesPorOperador() {
-  return useQuery({
-    queryKey: ["reportes", "costes-por-operador"],
-    queryFn: () => api<CostePorOperador[]>("/reportes/costes-por-operador"),
-  });
-}
-
 export function useReporteCostesPorPeriodo() {
   return useQuery({
     queryKey: ["reportes", "costes-por-periodo"],
     queryFn: () => api<CostePorPeriodo[]>("/reportes/costes-por-periodo"),
+  });
+}
+
+export function useReporteConsumoPorPeriodo() {
+  return useQuery({
+    queryKey: ["reportes", "consumo-por-periodo"],
+    queryFn: () => api<ConsumoPorPeriodo[]>("/reportes/consumo-por-periodo"),
+  });
+}
+
+export function useReporteExcesos(periodo?: string, autorizado?: boolean) {
+  return useQuery({
+    queryKey: ["reportes", "excesos", periodo ?? null, autorizado ?? null],
+    queryFn: () =>
+      api<ExcesoReporte[]>(
+        `/reportes/excesos${qs({ periodo, autorizado: autorizado === undefined ? undefined : String(autorizado) })}`
+      ),
+  });
+}
+
+export function useReporteRecursosSinAsignar() {
+  return useQuery({
+    queryKey: ["reportes", "recursos-sin-asignar"],
+    queryFn: () => api<RecursosSinAsignar>("/reportes/recursos-sin-asignar"),
+  });
+}
+
+export function useReporteRecursosPorPersona() {
+  return useQuery({
+    queryKey: ["reportes", "recursos-por-persona"],
+    queryFn: () => api<RecursosPorPersona[]>("/reportes/recursos-por-persona"),
+  });
+}
+
+// --- Sincronizacion institucional (ASSETS_RH) ---
+
+export function useSincronizarRrhh() {
+  return useMutation({
+    mutationFn: () => api<SincronizacionResumen>("/sincronizacion/rrhh", { method: "POST" }),
+  });
+}
+
+export function useImportarRrhh() {
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      api<SincronizacionResumen>("/sincronizacion/rh-json", { method: "POST", json: payload }),
   });
 }
 

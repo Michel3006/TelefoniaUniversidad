@@ -32,33 +32,24 @@ class Extension(Base):
 
 
 class Sim(Base):
+    """Recurso movil institucional: numero + SIM fisica (fusion de las
+    antiguas entidades Linea/Sim). ICCID e IMSI son opcionales porque no
+    siempre se conocen al dar de alta el recurso."""
+
     __tablename__ = "sims"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    iccid: Mapped[str] = mapped_column(String(30), unique=True)
-    imsi: Mapped[str | None] = mapped_column(String(30))
-    operador_id: Mapped[int | None] = mapped_column(ForeignKey("operadores.id"))
-    estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
-
-    operador: Mapped["Operador | None"] = relationship()
-    estado: Mapped["Estado | None"] = relationship()
-
-
-class Linea(Base):
-    __tablename__ = "lineas"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
     numero: Mapped[str] = mapped_column(String(30), unique=True, index=True)
-    operador_id: Mapped[int | None] = mapped_column(ForeignKey("operadores.id"))
+    iccid: Mapped[str | None] = mapped_column(String(30), unique=True)
+    imsi: Mapped[str | None] = mapped_column(String(30))
+    operador: Mapped[str] = mapped_column(String(100), default="ETECSA")
     plan_id: Mapped[int | None] = mapped_column(ForeignKey("planes.id"))
-    sim_id: Mapped[int | None] = mapped_column(ForeignKey("sims.id"))
     estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
 
-    operador: Mapped["Operador | None"] = relationship()
-    plan: Mapped["Plan | None"] = relationship()
-    sim: Mapped[Sim | None] = relationship()
+    plan: Mapped["Plan | None"] = relationship(back_populates="sims")
     estado: Mapped["Estado | None"] = relationship()
-    dispositivos: Mapped[list["Dispositivo"]] = relationship(back_populates="linea")
+    dispositivos: Mapped[list["Dispositivo"]] = relationship(back_populates="sim")
+    consumos: Mapped[list["Consumo"]] = relationship(back_populates="sim")
 
 
 class Dispositivo(Base):
@@ -68,10 +59,11 @@ class Dispositivo(Base):
     marca: Mapped[str] = mapped_column(String(100))
     modelo: Mapped[str] = mapped_column(String(100))
     imei: Mapped[str] = mapped_column(String(30), unique=True)
-    linea_id: Mapped[int | None] = mapped_column(ForeignKey("lineas.id"))
+    sim_id: Mapped[int | None] = mapped_column(ForeignKey("sims.id"))
     local_id: Mapped[int | None] = mapped_column(ForeignKey("locales.id"))
     estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
+    observaciones: Mapped[str | None] = mapped_column(Text)
 
-    linea: Mapped[Linea | None] = relationship(back_populates="dispositivos")
+    sim: Mapped[Sim | None] = relationship(back_populates="dispositivos")
     local: Mapped["Local | None"] = relationship()
     estado: Mapped["Estado | None"] = relationship()

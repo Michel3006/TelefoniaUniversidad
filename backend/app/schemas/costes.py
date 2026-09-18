@@ -5,12 +5,10 @@ from pydantic import BaseModel, ConfigDict
 
 class CosteBase(BaseModel):
     periodo: str  # YYYY-MM
-    concepto: str
-    monto: Decimal
-    moneda: str = "ARS"
+    importe: Decimal
+    observaciones: str | None = None
     departamento_id: int | None = None
-    linea_id: int | None = None
-    contrato_id: int | None = None
+    sim_id: int | None = None
 
 
 class CosteCreate(CosteBase):

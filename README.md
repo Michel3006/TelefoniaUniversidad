@@ -1,10 +1,10 @@
 # Sistema de Gestión de Telefonía
 
-Aplicación web para inventariar, administrar y controlar los costos de la telefonía de una organización (fija, móvil, SIMs y equipos).
+Aplicación web para inventariar, administrar y controlar los costos de la telefonía de una organización (fija, móvil, SIMs y equipos). Adaptada al contexto cubano: operadora fija **ETECSA**, costos en **CUP** y directorio de personas/cargos/áreas/departamentos sincronizado desde el sistema institucional de RRHH (**ASSETS_RH**, SQL Server).
 
 - **Backend**: Python 3.12 · FastAPI · SQLAlchemy 2.0 · Alembic · JWT
 - **Frontend**: React 18 + TypeScript + Vite + TailwindCSS
-- **Documentación**: `docs/` contiene el manual de usuario y la documentación técnica (`.md`, `.docx` y `.pdf`)
+- **Documentación**: `docs/` contiene el manual de usuario, la documentación técnica y la documentación de bases de datos (`.md`, `.docx` y `.pdf`)
 
 ## Estructura
 
@@ -27,6 +27,28 @@ alembic upgrade head
 python app/seed.py          # crea usuario admin / admin123
 uvicorn app.main:app --reload   # http://localhost:8000
 ```
+
+### Sincronización con RRHH (ASSETS_RH)
+
+El directorio de personas, cargos, áreas y unidades organizativas se copia desde el sistema institucional de RRHH (SQL Server `10.8.6.191` / `ASSETS_RH`). Opcional:
+
+1. Habilitar la conexión en `backend/.env`:
+   ```
+   ASSETS_RRH_HABILITADO=true
+   ASSETS_RRH_SERVER=10.8.6.191
+   ASSETS_RRH_DATABASE=ASSETS_RH
+   ASSETS_RRH_USERNAME=usuario
+   ASSETS_RRH_PASSWORD=clave
+   # ASSETS_RRH_DRIVER="ODBC Driver 17 for SQL Server"   # ajustar si es otro
+   ```
+2. Instalar el driver ODBC correspondiente (`pyodbc` ya está en `requirements.txt`).
+3. Ejecutar la sincronización por consola o desde la interfaz:
+   ```
+   cd backend
+   python scripts/sincronizar_rrhh.py --host 10.8.6.191 --port 1433 --username ... --password ...
+   # o desde la app: Administración → Sincronización RRHH
+   ```
+Si no hay conexión directa, se puede importar el mismo contenido en JSON desde esa misma pantalla.
 
 ### Frontend
 ```

@@ -30,6 +30,7 @@ interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   json?: unknown;
   form?: URLSearchParams;
+  formData?: FormData;
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -38,7 +39,9 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let body: BodyInit | undefined;
-  if (opts.form) {
+  if (opts.formData) {
+    body = opts.formData;
+  } else if (opts.form) {
     body = opts.form;
     headers["Content-Type"] = "application/x-www-form-urlencoded";
   } else if (opts.json !== undefined) {

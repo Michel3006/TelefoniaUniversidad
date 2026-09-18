@@ -34,4 +34,4 @@ def downgrade() -> None:
         sa.Column("observaciones", sa.Text(), nullable=True),
     )
     with op.batch_alter_table("contratos") as batch_op:
-        batch_op.add_column(sa.Column("proveedor_id", sa.Integer(), sa.ForeignKey("proveedores.id"), nullable=True))
+        batch_op.add_column(sa.Column("proveedor_id", sa.Integer(), sa.ForeignKey("proveedores.id", name="fk_contratos_proveedor_id"), nullable=True))

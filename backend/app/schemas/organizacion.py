@@ -1,23 +1,20 @@
+from datetime import date
+
 from pydantic import BaseModel, ConfigDict
 
 
-class DepartamentoBase(BaseModel):
-    nombre: str
-    departamento_padre_id: int | None = None
-
-
-class DepartamentoCreate(DepartamentoBase):
-    pass
-
-
-class DepartamentoUpdate(DepartamentoBase):
-    pass
-
-
-class DepartamentoRead(DepartamentoBase):
+class DepartamentoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    nombre: str
+    departamento_padre_id: int | None = None
+    id_direccion: str | None = None
+    nivel: int | None = None
+    id_area: int | None = None
+    fecha_alta: date | None = None
+    fecha_baja: date | None = None
+    baja: bool = False
 
 
 class EdificioCreate(BaseModel):

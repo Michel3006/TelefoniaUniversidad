@@ -1,7 +1,7 @@
 # Manual de Usuario — Sistema de Gestión de Telefonía
 
-Versión del documento: 1.0
-Fecha: 11 de septiembre de 2026
+Versión del documento: 2.0
+Fecha: 17 de septiembre de 2026
 
 ---
 
@@ -12,7 +12,8 @@ El **Sistema de Gestión de Telefonía** te ayuda a llevar el control de los tel
 - Quién tiene cada teléfono, línea móvil, chip (SIM) o equipo asignado.
 - Dónde está cada teléfono fijo (edificio, piso, oficina) y con qué extensiones cuenta.
 - Los contratos y planes con sus fechas de vencimiento.
-- Cuánto se gasta por mes y por departamento en telefonía.
+- Cuánto se gasta por mes y por departamento en telefonía (en pesos cubanos, CUP).
+- El **directorio de personas, cargos, áreas y departamentos se sincroniza** automáticamente desde el sistema institucional de RRHH (ASSETS_RH), para no cargar los datos dos veces.
 
 Todo se administra desde una página web sencilla, con formularios que te **avisan si algo está mal** antes de guardar.
 
@@ -32,7 +33,7 @@ Todo se administra desde una página web sencilla, con formularios que te **avis
 - En **Contraseña** escribí la tuya (ej. `admin123` para el usuario inicial).
 - Tocá el botón **Ingresar**.
 
-Si las credenciales son incorrectas aparece un mensaje de error. Si la sesión vence (se vence a los 30 minutos de inactividad), la aplicación te pide iniciar sesión de nuevo automáticamente.
+Si las credenciales son incorrectas aparece un mensaje de error. Si la sesión vence (a los 30 minutos de inactividad), la aplicación te pide iniciar sesión de nuevo automáticamente.
 
 ### 2.3 Cerrar sesión
 
@@ -42,11 +43,11 @@ Tocá el botón **Salir** en la barra superior. La próxima vez que entres tendr
 
 | Rol | Qué puede hacer |
 | --- | --- |
-| **Administrador** | Todo, incluido administrar los usuarios del sistema (crearlos, cambiarlos, desactivarlos). |
-| **Gestor** | Administra los recursos (personas, teléfonos, líneas, costos, etc.). |
+| **Administrador** | Todo, incluido administrar los usuarios del sistema (crearlos, cambiarlos, desactivarlos) y ejecutar la sincronización de RRHH. |
+| **Gestor** | Administra los recursos (teléfonos, líneas, costos, etc.). |
 | **Consulta** | Puede ver la información. |
 
-Algunas opciones del menú (por ejemplo **Usuarios**) solo aparecen para el administrador.
+Algunas opciones del menú (por ejemplo **Usuarios** y **Sincronización RRHH**) solo aparecen para el administrador.
 
 ---
 
@@ -58,26 +59,26 @@ El **Panel** (primera pantalla) te da una foto rápida de la organización:
 
 - **Contadores**: líneas móviles, teléfonos fijos, dispositivos, personas, edificios y locales.
 - **Vencimientos próximos**: contratos que se vencen en los próximos 60 días (en rojo si faltan 15 días o menos).
-- **Costes por departamento**: un gráfico de barras con lo gastado por cada departamento.
+- **Costos por departamento**: un gráfico de barras con lo gastado por cada departamento.
 
 Estos datos se actualizan solos cada vez que entrás al Panel.
 
-Barra lateral: la podés **colapsar** tocando las dobles flechas para ganar espacio.
+La barra lateral se puede **colapsar** tocando las dobles flechas para ganar espacio.
 
 El menú está organizado en grupos:
 
 - **Directorio**: Personas, Departamentos, Locales.
 - **Recursos**: Líneas, Teléfonos, Extensiones, Dispositivos, SIMs.
 - **Contratos**: Contratos, Planes.
-- **Catálogos**: Estados, Operadores.
-- **Costes, Asignaciones, Historial**.
-- **Administración**: Usuarios (solo admin).
+- **Catálogos**: Estados, Cargos, Áreas.
+- **Costos, Asignaciones, Historial**.
+- **Administración**: Usuarios (solo admin) y **Sincronización RRHH** (solo admin).
 
 ---
 
 ## 4. Cómo funcionan las pantallas de listado
 
-Todas las pantallas (salvo el Panel) funcionan igual:
+Casi todas las pantallas (salvo el Panel) funcionan igual:
 
 1. **Listado**: una tabla con los registros cargados.
 2. Botón **Crear** (arriba a la derecha) para agregar uno nuevo.
@@ -107,7 +108,11 @@ Tocá **Ver** para abrir una ficha con todos los datos (por ejemplo, un teléfon
 2. La aplicación te pregunta para confirmar. **Esta acción no se puede deshacer**.
 3. Tocá **Eliminar** de nuevo para confirmar.
 
-### 4.5 Errores de formulario
+### 4.5 Recursos de solo lectura
+
+Algunas pantallas (Personas, Departamentos, Cargos y Áreas) son **de solo lectura**: no tienen botón Crear ni Editar, porque sus datos se cargan desde el sistema institucional de RRHH mediante la sincronización. Si falta alguien o hay un dato desactualizado, ejecutá la sincronización (ver sección 12.2).
+
+### 4.6 Errores de formulario
 
 Si un campo tiene un problema, se marca **en rojo con un mensaje** debajo. No vas a poder guardar hasta corregirlo. La aplicación además **filtra caracteres inválidos al escribir** (por ejemplo, no te deja poner letras en un campo de número).
 
@@ -135,22 +140,20 @@ En la pantalla hay dos pestañas/formularios: uno para **locales** y otro para *
 
 ### 5.2 Departamentos (pantalla **Departamentos**)
 
-Sirven para agrupar a las personas y después poder ver los costos por departamento.
+Pantalla de **solo lectura**: muestra la estructura organizativa que llega de la sincronización de RRHH, en forma de árbol.
 
-- **Nombre**: por ejemplo "Recursos Humanos" (obligatorio).
-- **Departamento padre** (opcional): si un departamento depende de otro, elegí el superior (por ejemplo "Contabilidad" dentro de "Finanzas"). Si es la raíz, dejalo vacío.
-
-**Consejo**: cargá primero los departamentos madre y después los hijos.
+Junto al nombre de cada departamento se muestra su **código de dirección** (`Dir. …`), el **área** a la que pertenece y si está **dado de baja**. Si la información no está completa, ejecutá la sincronización.
 
 ### 5.3 Personas (pantalla **Personas**)
 
-Cada persona que usa teléfonos de la organización:
+Pantalla de **solo lectura**: lista los trabajadores sincronizados desde el sistema de RRHH. Al tocar **Ver** se abre una ficha con:
 
-- **Nombre** y **Apellido** (obligatorios).
-- **Documento**: el DNI o carné, solo números (opcional).
-- **Email** (opcional): debe tener formato válido (ej. `juan@gmail.com`).
-- **Teléfono** (opcional): solo números, espacios y guiones.
-- **Departamento** (opcional): elegí de la lista a qué departamento pertenece.
+- **Datos institucionales**: empleado, expediente, cargo, área, departamento, documento, centro de costo, extensión y estado (activo o baja).
+- **Recursos asignados**: las líneas, teléfonos, dispositivos y extensiones que tiene la persona (activos o finalizados).
+
+Buscá por nombre, apellido, documento o empleado. Recordá: **no se crean personas desde aquí**; el directorio se carga y actualiza con la sincronización de RRHH.
+
+**Consejo**: alcanza con que RRHH dé de alta a un trabajador en el sistema institucional; acá suele tenerse que ver reflejado de forma automática al sincronizar.
 
 ---
 
@@ -182,14 +185,14 @@ Son los números internos de marcación (ej. 410, 411) que cuelgan de un teléfo
 Son los **números de celular** de la organización.
 
 - **Número**: el número móvil, solo dígitos (obligatorio).
-- **Operador**: de la lista (en Cuba, ETECSA).
+- **Operador**: fijo, **ETECSA** (la única operadora del país; no se elige).
 - **Plan**: de la lista de planes cargados.
 - **SIM**: el chip físico que usa esa línea.
 - **Estado** (de la lista).
 
 Al tocar **Ver**: vas a ver la línea con su operador, plan, chip (ICCID/IMSI), el dispositivo que la usa y la persona responsable.
 
-**Orden recomendado**: cargá el operador y los planes antes de las líneas; y el chip (SIM) si querés asociarlo.
+**Orden recomendado**: cargá los planes y el chip (SIM) antes de las líneas.
 
 ### 6.4 Dispositivos (celulares/equipos)
 
@@ -206,7 +209,7 @@ El equipo en sí (marca y modelo):
 
 - **ICCID** (obligatorio): número de identificación de la tarjeta SIM, normalmente impreso en la misma tarjeta (19–20 dígitos). Solo números.
 - **IMSI** (opcional): los 15 dígitos que identifican a la SIM en la red.
-- **Operador**: de la lista.
+- **Operador**: fijo, **ETECSA**.
 - **Estado**.
 
 ---
@@ -219,17 +222,17 @@ El contrato firmado con la empresa de telecomunicaciones.
 
 - **Número** (obligatorio): identificador del contrato.
 - **Fecha de inicio** y **Fecha de vencimiento** (opcionales). La aplicación no te deja poner un vencimiento **anterior** al inicio.
-- **Descripción** (opcional).
+- **Observaciones** (opcional).
 
 En el Panel vas a ver los contratos que están por vencer (y en la pantalla Contratos la fecha de vencimiento con un aviso `(Xd)` cuando faltan 30 días o menos).
 
 ### 7.2 Planes
 
 - **Nombre** (obligatorio): por ejemplo "Pospago 20GB".
-- **Operador**: de la lista.
+- **Operador**: fijo, **ETECSA**.
 - **Contrato**: el contrato al que pertenece.
-- **Coste mensual** (opcional): el costo por mes, con decimales (ej. `1200.50`).
-- **Descripción** (opcional).
+- **Costo mensual** (opcional): el costo por mes, con decimales (ej. `1200.50`).
+- **Observaciones** (opcional).
 
 Los planes pueden asociarse a las líneas móviles.
 
@@ -239,48 +242,47 @@ Los planes pueden asociarse a las líneas móviles.
 
 ### 8.1 Estados
 
-Lista de estados para marcar los recursos (por ejemplo: "Activo", "De baja", "Pendiente"). Servís de etiqueta para saber el estado de cada teléfono, línea, chip o dispositivo.
+Lista de estados para marcar los recursos (por ejemplo: "Activo", "De baja", "Pendiente"). Sirven de etiqueta para saber el estado de cada teléfono, línea, chip o dispositivo.
 
 - **Nombre** (obligatorio y único).
 - **Descripción** (opcional).
 
 **Consejo**: creá primero los estados que necesites (Activo, Baja, Pendiente) y después usalos en todos los recursos.
 
-### 8.2 Operadores
+### 8.2 Cargos y Áreas (solo lectura)
 
-La empresa de telecomunicaciones (en Cuba: ETECSA).
+- **Cargos**: el catálogo de cargos (ej. "Especialista", "Técnico en Informática") sincronizado desde el sistema de RRHH.
+- **Áreas**: las áreas de trabajo sincronizadas desde el sistema de RRHH (ej. "Recursos Humanos", "Dirección").
 
-- **Nombre** (obligatorio y único).
-- **Descripción** (opcional).
+Ambos se usan para complementar la ficha de cada **persona**. Se cargan solos con la sincronización.
 
 ---
 
-## 9. Costes: el control de gastos
+## 9. Costos: el control de gastos
 
-Acá cargás los gastos de telefonía para llevar el control por mes.
+Acá cargás los gastos de telefonía para llevar el control por mes. Todo se registra en **pesos cubanos (CUP)**.
 
 - **Período** (obligatorio): el mes, con formato `AAAA-MM`. Ejemplo: `2026-09` es septiembre de 2026. Se valida que el mes sea válido.
-- **Concepto** (obligatorio): qué gasto es (ej. "Factura móviles", "Recarga de tarjeta").
-- **Monto** (obligatorio): el importe, con decimales (ej. `12500.75`).
-- **Moneda** (opcional): ej. "ARS".
-- **Departamento** / **Línea** / **Contrato** (opcionales): a qué imputás el gasto. Si pertenece a un departamento, tocá el botón para la vista por departamento y vas a ver el total.
+- **Importe** (obligatorio): el monto, con decimales (ej. `12500.75`).
+- **Observaciones** (opcional): qué gasto es (ej. "Factura móviles", "Recarga de tarjeta").
+- **Departamento** / **Línea** (opcionales): a qué imputás el gasto.
 
-La pantalla de Costes permite **filtrar por período** para ver solo un mes, y muestra el **total del filtro**.
+La pantalla de Costos permite **filtrar por período** y por **departamento**, y muestra el **importe total registrado (CUP)** con la cantidad de períodos distintos.
 
-En el **Panel** vas a ver el gráfico de costos por departamento; y hay reportes que suman por período y por operador.
+En el **Panel** vas a ver el gráfico de costos por departamento; en Reportes se resumen por período y por departamento.
 
 ---
 
 ## 10. Asignaciones: quién usa cada recurso
 
-Este es el corazón del sistema: registrar **a qué persona** se le entrega cada línea, dispositivo o extensión.
+Este es el corazón del sistema: registrar **a qué persona** se le entrega cada línea, teléfono, dispositivo o extensión.
 
 1. Tocá **Crear**.
 2. **Persona** (obligatorio): a quién se entrega.
-3. **Tipo de recurso** (obligatorio): Línea, Dispositivo o Extensión. Al elegir el tipo, la lista de **Recurso** se actualiza mostrando solo recursos de ese tipo.
+3. **Tipo de recurso** (obligatorio): Línea, **Teléfono**, Dispositivo o Extensión. Al elegir el tipo, la lista de **Recurso** se actualiza mostrando solo recursos de ese tipo.
 4. **Recurso** (obligatorio): el número/equipo específico.
 5. **Fecha de inicio** (obligatorio): desde cuándo lo tiene.
-6. **Fecha de fin** (opcional): si ya lo devolvió, ponelo acá.
+6. **Observaciones** (opcional): cualquier aclaración de la entrega.
 
 Para registrar que una persona **devolvió** el recurso, en la fila de la asignación podés **Finalizar** (la aplicación pone la fecha de hoy automáticamente). También la podés eliminar si se cargó por error.
 
@@ -297,7 +299,9 @@ Registro de auditoría de todo lo que se crea, modifica o elimina en el sistema:
 
 ---
 
-## 12. Administración de usuarios (solo admin)
+## 12. Administración (solo admin)
+
+### 12.1 Usuarios
 
 En **Usuarios** podés crear y administrar las cuentas para que otras personas entren:
 
@@ -307,12 +311,21 @@ En **Usuarios** podés crear y administrar las cuentas para que otras personas e
 
 **Recomendación**: creá cuentas individuales para cada persona en vez de compartir la de `admin`.
 
+### 12.2 Sincronización RRHH
+
+Pantalla exclusiva del administrador para actualizar el directorio desde el sistema institucional de RRHH (ASSETS_RH). Hay dos formas:
+
+- **Sincronización directa (SQL Server)**: el botón "Sincronizar desde ASSETS_RH" conecta al servidor institucional y copia trabajadores, unidades organizativas, cargos y áreas. Requiere que el servidor haya habilitado la conexión y configurado las credenciales; si no, la aplicación lo avisa.
+- **Importación desde JSON**: si no hay conexión directa, se pega un archivo JSON con el mismo contenido (cargos, áreas, unidades y empleados) y se importa.
+
+Al finalizar, la pantalla muestra un **resumen** de cuántos cargos, áreas, unidades organizativas y empleados se procesaron. La sincronización **actualiza** los registros existentes y **agrega** los nuevos; las personas y departamentos quedan listos para usarse en el resto de la aplicación.
+
 ---
 
 ## 13. Preguntas frecuentes
 
 **¿Puedo borrar una persona que tiene asignaciones?**
-El sistema lo permite, pero queda el historial. Es preferible primero **Finalizar** sus asignaciones y después borrarla si ya no existe.
+Las personas son parte del directorio sincronizado y no se borran desde la interfaz. Si falta alguien o cambió su estado (por ejemplo pasó a baja), actualizá el directorio con la sincronización.
 
 **¿Por qué no me deja escribir letras en el campo IMEI/ICCID?**
 Son campos numéricos; el sistema solo acepta dígitos para evitar errores de tipeo.
@@ -320,8 +333,8 @@ Son campos numéricos; el sistema solo acepta dígitos para evitar errores de ti
 **El campo "Período" me da error, ¿qué formato usa?**
 `AAAA-MM`. Escribí el año con 4 dígitos, un guion y el mes con 2 dígitos (ej. `2026-09`).
 
-**¿Qué es "CUIT" y por qué pide tantos dígitos?**
-Es el número tributario de 11 dígitos con un dígito de verificación. Si lo ingresás mal, el sistema te avisa. Si la persona no tiene, podés dejarlo vacío (es opcional).
+**¿Qué es el "documento" de una persona?**
+El número de identidad (carné de identidad / No. de CI) tal como lo registra RRHH. Es de solo lectura y llega con la sincronización.
 
 **¿Cómo sé quién tiene asignada una línea?**
 Entrá a **Líneas**, tocá **Ver** en la línea; ahí figura el responsable. También podés consultar en **Asignaciones**.
@@ -330,7 +343,10 @@ Entrá a **Líneas**, tocá **Ver** en la línea; ahí figura el responsable. Ta
 El token dura 30 minutos. Si estás mucho tiempo sin usar la app, tenés que volver a ingresar.
 
 **¿Dónde veo cuánto gasta mi entidad por mes?**
-Cargá los gastos en **Costes** con su **período**; el Panel muestra el gráfico por departamento y los reportes resumen por período y operador.
+Cargá los gastos en **Costos** con su **período** e **importe (CUP)**; el Panel muestra el gráfico por departamento y la pantalla Costos el total registrado.
+
+**¿Cada cuánto se actualiza el directorio de personas?**
+Cada vez que un administrador ejecuta la **Sincronización RRHH**. Conviene hacerlo cuando haya altas, bajas o cambios de departamento en el sistema institucional.
 
 ---
 
@@ -344,8 +360,12 @@ Cargá los gastos en **Costes** con su **período**; el Panel muestra el gráfic
 | **IMEI** | Código único de 15 dígitos de cada equipo móvil (se ve con `*#06#`). |
 | **Línea** | El número móvil (celular) que usa la organización. |
 | **Extensión** | Número interno corto colgado de un teléfono fijo. |
-| **CUIT/CUIL** | Número tributario de 11 dígitos. |
-| **Plan** | Paquete de servicio asociado a una operadora y a un costo mensual. |
+| **Plan** | Paquete de servicio asociado a la operadora y a un costo mensual. |
+| **CUP** | Peso cubano, la moneda en que se registran los costos. |
+| **ETECSA** | La Empresa de Telecomunicaciones de Cuba (operadora única). |
+| **Cargo** | El puesto que ocupa una persona (ej. "Especialista"). |
+| **Área** | Área de trabajo a la que pertenece una persona o departamento. |
+| **Sincronización** | Copia del directorio de RRHH (personas, cargos, áreas, unidades) hacia esta aplicación. |
 | **Asignación** | Registro de "qué persona → qué recurso, desde cuándo". |
 | **Período** | Mes en formato `AAAA-MM` para los costos. |
 | **Estado** | Etiqueta que define la situación de un recurso (Activo, Baja, etc.). |

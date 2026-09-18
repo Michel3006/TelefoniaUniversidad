@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { CrudPage } from "../../components/crud/CrudPage";
-import { useEstados, useExtensiones, useTelefonos } from "../../lib/queries";
+import { BuscadorRecurso } from "../../components/ui/BuscadorRecurso";
+import { useBuscarExtensiones, useEstados, useExtensiones, useTelefonos } from "../../lib/queries";
 import type { Extension } from "../../lib/types";
 import { StatusPill } from "../../components/ui/StatusPill";
 
@@ -18,7 +19,14 @@ export function ExtensionesPage() {
   ];
 
   return (
-    <CrudPage<Extension>
+    <div className="space-y-4">
+      <BuscadorRecurso<Extension>
+        placeholder="Buscar por número…"
+        useBuscar={useBuscarExtensiones}
+        obtenerId={(e) => e.id}
+        obtenerEtiqueta={(e) => e.numero}
+      />
+      <CrudPage<Extension>
       titulo="Extensiones"
       entidadKey="extensiones"
       basePath="/extensiones"
@@ -41,6 +49,7 @@ export function ExtensionesPage() {
         },
         { name: "observaciones", label: "Observaciones", type: "textarea", max: 500 },
       ]}
-    />
+      />
+    </div>
   );
 }

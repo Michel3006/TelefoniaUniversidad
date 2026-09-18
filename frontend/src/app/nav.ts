@@ -1,14 +1,17 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Building2,
+  Database,
   FileText,
   Gauge,
   History,
-  Landmark,
   Phone,
-  PhoneCall,
   Radio,
+  ReceiptText,
+  ShieldCheck,
   Shuffle,
+  SlidersHorizontal,
   Smartphone,
   Tags,
   Users,
@@ -43,7 +46,6 @@ export const NAV: NavGroup[] = [
   {
     titulo: "Recursos",
     items: [
-      { label: "Líneas", to: "/lineas", icon: PhoneCall },
       { label: "Teléfonos", to: "/telefonos", icon: Phone },
       { label: "Extensiones", to: "/extensiones", icon: Radio },
       { label: "Dispositivos", to: "/dispositivos", icon: Smartphone },
@@ -58,22 +60,35 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    titulo: "Operación",
+    items: [
+      { label: "Consumo", to: "/consumo", icon: ReceiptText },
+      { label: "Reportes", to: "/reportes", icon: BarChart3 },
+      { label: "Límites", to: "/limites", icon: SlidersHorizontal, soloAdmin: true },
+      { label: "Autorizaciones", to: "/autorizaciones", icon: ShieldCheck, soloAdmin: true },
+    ],
+  },
+  {
     titulo: "Catálogos",
     items: [
       { label: "Estados", to: "/estados", icon: Tags },
-      { label: "Operadores", to: "/operadores", icon: Landmark },
+      { label: "Cargos", to: "/cargos", icon: UsersRound },
+      { label: "Áreas", to: "/areas", icon: Building2 },
     ],
   },
   {
     titulo: null,
     items: [
-      { label: "Costes", to: "/costes", icon: FileText },
+      { label: "Costos", to: "/costes", icon: FileText },
       { label: "Asignaciones", to: "/asignaciones", icon: Shuffle },
       { label: "Historial", to: "/historial", icon: History },
     ],
   },
   {
     titulo: "Administración",
-    items: [{ label: "Usuarios", to: "/usuarios", icon: Users, soloAdmin: true }],
+    items: [
+      { label: "Usuarios", to: "/usuarios", icon: Users, soloAdmin: true },
+      { label: "Sincronización RRHH", to: "/sincronizacion", icon: Database, soloAdmin: true },
+    ],
   },
 ];
