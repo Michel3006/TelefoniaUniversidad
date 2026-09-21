@@ -9,8 +9,25 @@ services:
     plan: free
     region: oregon
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd backend && alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers
     healthCheckPath: /health
+    # headers (M4): protecccion CSRF/clickjacking/MIME y HSTS sobre TLS.
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
@@ -22,12 +39,28 @@ services:
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
+      # C1: el seed NO crea el admin si esta variable esta vacia. Definirla en
+      # el panel de Render con una password de un solo uso (sync: false evita
+      # que este archivo la pise al hacer deploy).
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+        value: ""
 
   - type: web
     name: sistema-telefonia-frontend
     runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: same-origin
     routes:
       - type: rewrite
         source: /*

@@ -278,7 +278,7 @@ Endpoints custom (además del CRUD):
 
 ### 3.11 Seed (`app/seed.py`)
 
-Crea (si no existen) el rol `admin` y el usuario `admin` con contraseña `admin123`. Uso en local:
+Crea (si no existen) el rol `admin` y el usuario `admin` con la contraseña definida en `ADMIN_INITIAL_PASSWORD`. Uso en local:
 
 ```
 python -m app.seed   # o: python app/seed.py  (desde backend/)
@@ -560,7 +560,7 @@ pip install -r requirements.txt  # y -r requirements-dev.txt si se testea
 # crear .env con: DATABASE_URL / SECRET_KEY / ACCESS_TOKEN_EXPIRE_MINUTES
 # (+ ASSETS_RRH_* si se va a sincronizar desde ASSETS_RH, ver sección 3.3)
 alembic upgrade head             # crea/aplica las tablas
-python app/seed.py               # crea rol admin y usuario admin/admin123
+python app/seed.py               # crea rol admin y usuario admin con ADMIN_INITIAL_PASSWORD
 uvicorn app.main:app --reload    # http://localhost:8000
 # opcional: sincronizar el directorio desde ASSETS_RH
 python scripts/sincronizar_rrhh.py --host 10.8.6.191 --port 1433 --username U --password P
@@ -577,7 +577,8 @@ npm run dev                      # http://localhost:5173
 
 ### 7.3 Ingreso inicial
 
-- Usuario: `admin` / Contraseña: `admin123` (creado por el seed). Cambiar luego desde Administración → Usuarios.
+- Usuario: `admin` / Contraseña: la definida en `ADMIN_INITIAL_PASSWORD` (creado por el seed). Cambiar luego desde Administración → Usuarios.
+- En la primera sesión el sistema lo obliga a cambiarla (pantalla `/cuenta`).
 
 ---
 
@@ -643,7 +644,7 @@ Agregar funciones decoradas en el archivo del módulo correspondiente (ej. `exte
 - Login por consola (curl):
 
 ```
-curl -X POST http://localhost:8000/api/v1/auth/login -H "Content-Type: application/x-www-form-urlencoded" -d "username=admin&password=admin123"
+curl -X POST http://localhost:8000/api/v1/auth/login -H "Content-Type: application/x-www-form-urlencoded" -d "username=admin&password=<ADMIN_INITIAL_PASSWORD>"
 ```
 
 - Frente frontend: `npm run typecheck` y `npm run build`.

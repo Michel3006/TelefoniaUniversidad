@@ -63,7 +63,7 @@ Cuota Mensual Consumo Comisión Impuesto Facturado Atraso Total a Pagar
 Resumen por Servicios
 Servicio Cuota Consumo Comisión Impuesto Importe
 52880232 455.00 38.94 0.00 0.00 493.94
-Total 105,903.00 1,011.31 0.00 0.00 106,914.31
+Total 455.00 38.94 0.00 0.00 493.94
 Pagar a:
 """
 
@@ -76,7 +76,7 @@ def _subir_factura(client: TestClient, auth_headers, monkeypatch):
     return client.post(
         "/api/v1/consumo/importar-pdf",
         headers=auth_headers,
-        files={"archivo": ("factura.pdf", b"contenido-simulado", "application/pdf")},
+        files={"archivo": ("factura.pdf", b"%PDF-contenido-simulado", "application/pdf")},
     )
 
 

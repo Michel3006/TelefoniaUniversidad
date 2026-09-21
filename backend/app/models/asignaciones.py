@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, String, Text
+from sqlalchemy import Date, ForeignKey, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,3 +18,14 @@ class Asignacion(Base):
     observaciones: Mapped[str | None] = mapped_column(Text)
 
     persona: Mapped["Persona"] = relationship()
+
+    __table_args__ = (
+        Index(
+            "uq_asignacion_activa",
+            "tipo_recurso",
+            "recurso_id",
+            unique=True,
+            postgresql_where=text("fecha_fin IS NULL"),
+            sqlite_where=text("fecha_fin IS NULL"),
+        ),
+    )

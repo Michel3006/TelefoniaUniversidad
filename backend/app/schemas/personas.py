@@ -30,3 +30,19 @@ class PersonaRead(PersonaBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PersonaReadBasico(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nombre: str
+    apellido: str
+    apellido_2: str | None = None
+    departamento_id: int | None = None
+    id_empleado: str | None = None
+    id_expediente: str | None = None
+    id_ccosto: str | None = None
+    cargo_id: int | None = None
+    area_id: int | None = None
+    baja: bool = False

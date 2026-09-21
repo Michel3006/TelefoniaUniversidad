@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,10 +29,15 @@ build_crud(
 
 
 @locales_router.get("/por-edificio/{edificio_id}", response_model=list[LocalRead])
-def locales_por_edificio(edificio_id: int, db: Session = Depends(get_db)):
+def locales_por_edificio(
+    edificio_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     edificio = db.get(Edificio, edificio_id)
     if edificio is None:
         raise HTTPException(status_code=404, detail="No existe el edificio")
     return db.scalars(
-        select(Local).where(Local.edificio_id == edificio_id)
+        select(Local).where(Local.edificio_id == edificio_id).offset(skip).limit(limit)
     ).all()

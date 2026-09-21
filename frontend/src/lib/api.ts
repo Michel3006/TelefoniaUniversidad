@@ -18,6 +18,10 @@ const BASE_URL: string = VITE_API_URL.endsWith("/api/v1")
   ? VITE_API_URL
   : `${VITE_API_URL.replace(/\/+$/, "")}/api/v1`;
 
+// Decisión A2.9: el token se guarda en localStorage. Es un token de corta
+// expiración (access token) contra un backend con rate-limit por IP y el
+// frontend es una SPA sin cookies ni TLS en desarrollo; se priorizó la
+// simplicidad. Cambiar a cookies HttpOnly + CSRF si el requisito cambia.
 const TOKEN_KEY = "troncal.token";
 
 export const tokenStore = {

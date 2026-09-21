@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import require_role
@@ -7,12 +7,18 @@ from app.db.session import get_db
 from app.models.consumo import Consumo, FacturaEtecsa
 from app.models.historial import Historial
 from app.schemas.consumo import ConsumoRead, FacturaEtecsaRead, ImportacionResumen
-from app.services.consumo import FacturaMalFormadaError, importar_factura
+from app.services.consumo import (
+    FacturaDemasiadoGrandeError,
+    FacturaMalFormadaError,
+    TotalesIncoherentesError,
+    importar_factura,
+)
 
 router = APIRouter(prefix="/consumo", tags=["consumo"])
 facturas_router = APIRouter(prefix="/facturas-etecsa", tags=["facturas-etecsa"])
 
 _TAMANO_MAXIMO_MB = 15
+_NOMBRE_ARCHIVO_MAX = 255
 
 
 @router.post(
@@ -20,7 +26,7 @@ _TAMANO_MAXIMO_MB = 15
     response_model=ImportacionResumen,
     dependencies=[Depends(require_role("admin", "gestor"))],
 )
-async def importar_pdf(
+def importar_pdf(
     archivo: UploadFile,
     request: Request,
     db: Session = Depends(get_db),
@@ -28,13 +34,21 @@ async def importar_pdf(
     if archivo.content_type != "application/pdf" and not archivo.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
 
-    contenido = await archivo.read()
-    if len(contenido) > _TAMANO_MAXIMO_MB * 1024 * 1024:
+    limite_bytes = _TAMANO_MAXIMO_MB * 1024 * 1024
+    contenido = archivo.file.read(limite_bytes + 1)
+    if len(contenido) > limite_bytes:
         raise HTTPException(status_code=400, detail=f"El archivo supera el tamano maximo ({_TAMANO_MAXIMO_MB} MB)")
 
+    if not contenido.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="El archivo no es un PDF valido")
+
+    nombre = (archivo.filename or "factura.pdf")[:_NOMBRE_ARCHIVO_MAX]
+
     try:
-        resumen = importar_factura(db, contenido, archivo.filename)
+        resumen = importar_factura(db, contenido, nombre)
     except FacturaMalFormadaError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (FacturaDemasiadoGrandeError, TotalesIncoherentesError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -127,11 +141,31 @@ def obtener_factura(factura_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_role("admin"))],
 )
-def eliminar_factura(factura_id: int, db: Session = Depends(get_db)):
+def eliminar_factura(
+    factura_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """Permite reimportar una factura: borra la cabecera y sus consumos
     asociados (cascade) para poder volver a subir el PDF corregido."""
     factura = db.get(FacturaEtecsa, factura_id)
     if factura is None:
         raise HTTPException(status_code=404, detail="No existe la factura")
+    n_consumos = db.scalar(
+        select(func.count()).select_from(Consumo).where(Consumo.factura_id == factura_id)
+    ) or 0
+    usuario = getattr(request.state, "user", None)
+    db.add(
+        Historial(
+            entidad="facturas_etecsa",
+            entidad_id=factura_id,
+            accion="eliminado",
+            valor_nuevo=(
+                f"no_factura={factura.no_factura} periodo={factura.periodo} "
+                f"consumos={n_consumos}"
+            ),
+            usuario_id=usuario.id if usuario else None,
+        )
+    )
     db.delete(factura)
     db.commit()

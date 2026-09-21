@@ -81,7 +81,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: "Costos", to: "/costes", icon: FileText },
       { label: "Asignaciones", to: "/asignaciones", icon: Shuffle },
-      { label: "Historial", to: "/historial", icon: History },
+      { label: "Historial", to: "/historial", icon: History, soloAdmin: true },
     ],
   },
   {

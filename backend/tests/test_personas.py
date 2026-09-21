@@ -117,6 +117,41 @@ def test_consulta_no_puede_crear_persona(client: TestClient, consulta_headers):
     assert response.status_code == 403
 
 
+def test_consulta_no_ve_campos_sensibles(client: TestClient, auth_headers, consulta_headers):
+    """A1: el rol consulta recibe la persona sin documento/email/telefono/exttelef."""
+    persona_id = client.post(
+        "/api/v1/personas/",
+        headers=auth_headers,
+        json={
+            "nombre": "Sensible",
+            "apellido": "Datos",
+            "documento": "88010112345",
+            "email": "sensible@test.com",
+            "telefono": "5555555",
+            "exttelef": "101",
+        },
+    ).json()["id"]
+
+    admin_view = client.get(f"/api/v1/personas/{persona_id}", headers=auth_headers).json()
+    assert admin_view["documento"] == "88010112345"
+    assert admin_view["email"] == "sensible@test.com"
+
+    consult_view = client.get(f"/api/v1/personas/{persona_id}", headers=consulta_headers).json()
+    assert "documento" not in consult_view
+    assert "email" not in consult_view
+    assert "telefono" not in consult_view
+    assert "exttelef" not in consult_view
+    assert consult_view["nombre"] == "Sensible"
+
+    busqueda = client.get(
+        "/api/v1/personas/buscar",
+        headers=consulta_headers,
+        params={"q": "Datos"},
+    ).json()
+    assert len(busqueda) == 1
+    assert "documento" not in busqueda[0]
+
+
 def test_no_auth(client: TestClient):
     response = client.get("/api/v1/personas/")
     assert response.status_code == 401

@@ -77,3 +77,30 @@ def test_historial_registra_actualizacion(client: TestClient, auth_headers):
 def test_no_auth(client: TestClient):
     response = client.get("/api/v1/historial/")
     assert response.status_code == 401
+
+
+def test_gestor_no_puede_ver_historial(client: TestClient, gestor_headers):
+    """A1: el historial es exclusivo de admin."""
+    response = client.get("/api/v1/historial/", headers=gestor_headers)
+    assert response.status_code == 403
+
+
+def test_consulta_no_puede_ver_historial(client: TestClient, consulta_headers):
+    response = client.get("/api/v1/historial/", headers=consulta_headers)
+    assert response.status_code == 403
+
+
+def test_historial_eliminacion_con_valor_anterior(client: TestClient, auth_headers):
+    """M1: al eliminar un registro queda el JSON del valor anterior."""
+    plan = client.post("/api/v1/planes/", headers=auth_headers, json={"nombre": "Plan Del"})
+    plan_id = plan.json()["id"]
+    assert client.delete(f"/api/v1/planes/{plan_id}", headers=auth_headers).status_code == 204
+
+    data = client.get(
+        "/api/v1/historial/",
+        headers=auth_headers,
+        params={"entidad": "planes", "entidad_id": plan_id},
+    ).json()
+    assert any(h["accion"] == "eliminado" for h in data)
+    eliminado = next(h for h in data if h["accion"] == "eliminado")
+    assert eliminado["valor_anterior"] is not None

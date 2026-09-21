@@ -96,3 +96,23 @@ def test_no_auth(client: TestClient):
         json=PAYLOAD,
     )
     assert response.status_code == 401
+
+
+def test_rh_json_body_demasiado_grande(client: TestClient, auth_headers):
+    """M3/A5: un payload mayor al tope declarado se rechaza antes de procesar."""
+    import json as _json
+
+    body = _json.dumps(
+        {
+            "cargos": [{"codigo": "0", "nombre": "x" * (5 * 1024 * 1024)}],
+            "areas": [],
+            "unidades": [],
+            "empleados": [],
+        }
+    ).encode()
+    response = client.post(
+        "/api/v1/sincronizacion/rh-json",
+        headers={"Authorization": auth_headers["Authorization"], "Content-Type": "application/json"},
+        content=body,
+    )
+    assert response.status_code == 413

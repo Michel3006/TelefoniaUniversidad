@@ -25,6 +25,7 @@ import { AsignacionesPage } from "../pages/asignaciones/AsignacionesPage";
 import { UsuariosPage } from "../pages/usuarios/UsuariosPage";
 import { HistorialPage } from "../pages/historial/HistorialPage";
 import { SincronizacionPage } from "../pages/sincronizacion/SincronizacionPage";
+import { CuentaPage } from "../pages/cuenta/CuentaPage";
 
 export function AppRouter() {
   return (
@@ -71,7 +72,15 @@ export function AppRouter() {
           <Route path="/planes" element={<PlanesPage />} />
           <Route path="/costes" element={<CostesPage />} />
           <Route path="/asignaciones" element={<AsignacionesPage />} />
-          <Route path="/historial" element={<HistorialPage />} />
+          <Route
+            path="/historial"
+            element={
+              <AdminRoute>
+                <HistorialPage />
+              </AdminRoute>
+            }
+          />
+          <Route path="/cuenta" element={<CuentaPage />} />
           <Route
             path="/sincronizacion"
             element={
