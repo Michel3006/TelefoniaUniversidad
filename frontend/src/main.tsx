@@ -5,6 +5,14 @@ import { queryClient } from "./lib/query-client";
 import { AuthProvider } from "./lib/auth-context";
 import { ToastProvider } from "./components/ui/Toast";
 import { AppRouter } from "./app/router";
+// Fuentes autoalojadas (M4): sin requests externos a fonts.googleapis.com.
+import "@fontsource/archivo/400.css";
+import "@fontsource/archivo/500.css";
+import "@fontsource/archivo/600.css";
+import "@fontsource/archivo/700.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "@fontsource/ibm-plex-mono/600.css";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

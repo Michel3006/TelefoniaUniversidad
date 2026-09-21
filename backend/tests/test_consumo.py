@@ -17,7 +17,7 @@ Resumen por Servicios
 Servicio Cuota Consumo Comisión Impuesto Importe
 59921173 560.00 0.00 0.00 0.00 560.0059921170 770.00 0.00 0.00 0.00 770.00
 52880232 455.00 38.94 0.00 0.00 493.9452885278 455.00 3.15 0.00 0.00 458.15
-Total 105,903.00 1,011.31 0.00 0.00 106,914.31
+Total 2,240.00 42.09 0.00 0.00 2,282.09
 Pagar a:
 """
 
@@ -32,7 +32,7 @@ def _subir_factura(client: TestClient, auth_headers, monkeypatch, texto=FACTURA_
     return client.post(
         "/api/v1/consumo/importar-pdf",
         headers=auth_headers,
-        files={"archivo": ("factura.pdf", b"contenido-simulado", "application/pdf")},
+        files={"archivo": ("factura.pdf", b"%PDF-contenido-simulado", "application/pdf")},
     )
 
 
@@ -87,6 +87,50 @@ def test_importar_no_pdf(client: TestClient, auth_headers, monkeypatch):
         "/api/v1/consumo/importar-pdf",
         headers=auth_headers,
         files={"archivo": ("factura.txt", b"texto", "text/plain")},
+    )
+    assert response.status_code == 400
+
+
+FACTURA_TOTALES_INCOHERENTES = """
+Número de Cliente:7166091
+Folio: 00062639
+No. factura: 41012682713948
+Fecha de Vencimiento: 31/08/26
+Periodo de consumo: 01/08/26 – 31/08/26
+Moneda: CUP
+Fecha Factura: 05/09/26
+Cuota Mensual Consumo Comisión Impuesto Facturado Atraso Total a Pagar
+105,903.00 1,011.31 0.00 0.00 106,914.31 182,226.21 289,140.52
+Desglose (Consumo)
+Consumo Voz 700.80
+Consumo SMS 310.51
+Resumen por Servicios
+Servicio Cuota Consumo Comisión Impuesto Importe
+59921173 560.00 0.00 0.00 0.00 560.0059921170 770.00 0.00 0.00 0.00 770.00
+Total 1,330.00 0.00 0.00 0.00 999,999.00
+Pagar a:
+"""
+
+
+def test_importar_factura_totales_incoherentes(client: TestClient, auth_headers, monkeypatch):
+    """A5: si el footer no coincide con las filas, la importacion se rechaza."""
+    monkeypatch.setattr(
+        "app.services.consumo.extraer_texto_pdf",
+        lambda contenido: FACTURA_TOTALES_INCOHERENTES,
+    )
+    response = client.post(
+        "/api/v1/consumo/importar-pdf",
+        headers=auth_headers,
+        files={"archivo": ("factura.pdf", b"%PDF-contenido-simulado", "application/pdf")},
+    )
+    assert response.status_code == 422
+
+
+def test_importar_archivo_demasiado_grande(client: TestClient, auth_headers):
+    response = client.post(
+        "/api/v1/consumo/importar-pdf",
+        headers=auth_headers,
+        files={"archivo": ("factura.pdf", b"%PDF-simulado" + b"x" * (15 * 1024 * 1024), "application/pdf")},
     )
     assert response.status_code == 400
 

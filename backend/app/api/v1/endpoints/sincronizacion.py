@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.security import require_role
@@ -12,9 +12,21 @@ router = APIRouter(
     dependencies=[Depends(require_role("admin"))],
 )
 
+_TAMANO_MAXIMO_RH_JSON = 5 * 1024 * 1024
+
 
 @router.post("/rh-json", response_model=SincronizacionResumen)
-def aplicar_json(payload: SincronizacionRrhh, db: Session = Depends(get_db)):
+def aplicar_json(payload: SincronizacionRrhh, request: Request, db: Session = Depends(get_db)):
+    longitud = request.headers.get("content-length")
+    if longitud is not None:
+        try:
+            if int(longitud) > _TAMANO_MAXIMO_RH_JSON:
+                raise HTTPException(
+                    status_code=413,
+                    detail="La sincronizacion excede el tamano maximo permitido",
+                )
+        except ValueError:
+            pass
     return institucional.aplicar(db, payload.model_dump())
 
 

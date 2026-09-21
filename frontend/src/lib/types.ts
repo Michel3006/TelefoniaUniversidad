@@ -14,6 +14,7 @@ export interface Usuario {
   email: string;
   activo: boolean;
   rol: Rol;
+  debe_cambiar_password?: boolean;
 }
 
 export interface Cargo {
@@ -33,10 +34,11 @@ export interface Persona {
   nombre: string;
   apellido: string;
   apellido_2: string | null;
-  documento: string | null;
-  email: string | null;
-  telefono: string | null;
-  exttelef: string | null;
+  // Datos sensibles: el rol "consulta" no los recibe del backend.
+  documento?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  exttelef?: string | null;
   departamento_id: number | null;
   id_empleado: string | null;
   id_expediente: string | null;

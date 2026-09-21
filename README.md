@@ -24,18 +24,18 @@ py -m venv venv
 pip install -r requirements.txt
 # crear .env con: DATABASE_URL / SECRET_KEY / ACCESS_TOKEN_EXPIRE_MINUTES
 alembic upgrade head
-python app/seed.py          # crea usuario admin / admin123
+python app/seed.py          # crea el usuario admin usando ADMIN_INITIAL_PASSWORD
 uvicorn app.main:app --reload   # http://localhost:8000
 ```
 
 ### Sincronización con RRHH (ASSETS_RH)
 
-El directorio de personas, cargos, áreas y unidades organizativas se copia desde el sistema institucional de RRHH (SQL Server `10.8.6.191` / `ASSETS_RH`). Opcional:
+El directorio de personas, cargos, áreas y unidades organizativas se copia desde el sistema institucional de RRHH (SQL Server `servidor-rrhh.ejemplo.local` / `ASSETS_RH`). Opcional:
 
 1. Habilitar la conexión en `backend/.env`:
    ```
    ASSETS_RRH_HABILITADO=true
-   ASSETS_RRH_SERVER=10.8.6.191
+   ASSETS_RRH_SERVER=servidor-rrhh.ejemplo.local
    ASSETS_RRH_DATABASE=ASSETS_RH
    ASSETS_RRH_USERNAME=usuario
    ASSETS_RRH_PASSWORD=clave
@@ -45,7 +45,7 @@ El directorio de personas, cargos, áreas y unidades organizativas se copia desd
 3. Ejecutar la sincronización por consola o desde la interfaz:
    ```
    cd backend
-   python scripts/sincronizar_rrhh.py --host 10.8.6.191 --port 1433 --username ... --password ...
+   python scripts/sincronizar_rrhh.py --host servidor-rrhh.ejemplo.local --port 1433 --username ... --password ...
    # o desde la app: Administración → Sincronización RRHH
    ```
 Si no hay conexión directa, se puede importar el mismo contenido en JSON desde esa misma pantalla.
@@ -59,7 +59,7 @@ npm run dev                 # http://localhost:5173
 ```
 
 ### Credenciales iniciales
-`admin` / `admin123` (cambiar desde Administración → Usuarios)
+La contraseña del usuario `admin` es la que se defina en `ADMIN_INITIAL_PASSWORD` al ejecutar el seed (cambiar desde Administración → Usuarios).
 
 ## Deploy en Render
 

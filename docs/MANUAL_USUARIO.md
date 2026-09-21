@@ -30,7 +30,7 @@ Todo se administra desde una página web sencilla, con formularios que te **avis
 ### 2.2 Iniciar sesión
 
 - En **Usuario** escribí tu nombre de usuario (ej. `admin`).
-- En **Contraseña** escribí la tuya (ej. `admin123` para el usuario inicial).
+- En **Contraseña** escribí la tuya (la del usuario inicial es la definida en `ADMIN_INITIAL_PASSWORD`).
 - Tocá el botón **Ingresar**.
 
 Si las credenciales son incorrectas aparece un mensaje de error. Si la sesión vence (a los 30 minutos de inactividad), la aplicación te pide iniciar sesión de nuevo automáticamente.

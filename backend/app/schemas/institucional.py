@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CargoRead(BaseModel):
@@ -57,10 +57,10 @@ class SincronizacionEmpleado(BaseModel):
 
 
 class SincronizacionRrhh(BaseModel):
-    cargos: list[SincronizacionCargo] = []
-    areas: list[SincronizacionArea] = []
-    unidades: list[SincronizacionUnidad] = []
-    empleados: list[SincronizacionEmpleado] = []
+    cargos: list[SincronizacionCargo] = Field(default_factory=list, max_length=50_000)
+    areas: list[SincronizacionArea] = Field(default_factory=list, max_length=50_000)
+    unidades: list[SincronizacionUnidad] = Field(default_factory=list, max_length=50_000)
+    empleados: list[SincronizacionEmpleado] = Field(default_factory=list, max_length=50_000)
 
 
 class SincronizacionResumen(BaseModel):

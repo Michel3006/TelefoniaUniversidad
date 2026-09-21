@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.security import require_role
 from app.db.session import get_db
 from app.models.historial import Historial
 from app.schemas.historial import HistorialRead
@@ -16,6 +17,7 @@ def listar(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
+    _admin=Depends(require_role("admin")),
 ):
     query = select(Historial).order_by(Historial.fecha.desc()).offset(skip).limit(limit)
     if entidad:

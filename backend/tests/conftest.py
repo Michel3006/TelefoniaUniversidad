@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["LOGIN_RATE_LIMIT_HABILITADO"] = "false"
 
 from app.core.security import create_access_token, hash_password
 from app.db.base import Base

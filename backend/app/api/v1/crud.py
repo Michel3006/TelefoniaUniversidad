@@ -1,5 +1,7 @@
 from typing import Any
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -68,6 +70,7 @@ def build_crud(
                     entidad=entidad,
                     entidad_id=item.id,
                     accion="creado",
+                    valor_nuevo=_json_registro(item),
                     usuario_id=_usuario_id(request),
                 )
             )
@@ -113,6 +116,7 @@ def build_crud(
         item = db.get(model, item_id)
         if item is None:
             raise HTTPException(status_code=404, detail="No existe el recurso")
+        copia = _json_registro(item)
         db.delete(item)
         if entidad:
             db.add(
@@ -120,7 +124,18 @@ def build_crud(
                     entidad=entidad,
                     entidad_id=item_id,
                     accion="eliminado",
+                    valor_anterior=copia,
                     usuario_id=_usuario_id(request),
                 )
             )
         db.commit()
+
+
+def _json_registro(item: Any) -> str | None:
+    """Serializa un registro a JSON (con valores que el schema conoce)."""
+    try:
+        datos = item.__dict__.copy()
+        datos.pop("_sa_instance_state", None)
+        return json.dumps(datos, default=str, ensure_ascii=False)
+    except (TypeError, AttributeError):
+        return None

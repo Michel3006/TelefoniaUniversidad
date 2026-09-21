@@ -1,18 +1,29 @@
 """Prueba end-to-end con el PDF real de ETECSA aportado por el usuario
-(periodo 07/2026). Se ejecuta solo si el archivo esta presente en la raiz
-del repositorio; en caso contrario se omite (skip) para no romper el CI en
-entornos que no lo tengan."""
+(periodo 07/2026). Se ejecuta solo si el archivo esta presente en
+`backend/tests/private/`, en la ruta indicada por la variable `ETECSA_PDF_PATH`,
+o en la raiz del repositorio; en caso contrario se omite (skip) para no
+romper el CI en entornos que no lo tengan."""
 import os
 
 import pytest
 from fastapi.testclient import TestClient
 
-PDF_RELATIVO = os.path.join("..", "..", "202607_73212_41012682713947.pdf")
-
 
 def _ruta_pdf() -> str | None:
-    ruta = os.path.abspath(os.path.join(os.path.dirname(__file__), PDF_RELATIVO))
-    return ruta if os.path.exists(ruta) else None
+    candidatas = []
+    anon = os.environ.get("ETECSA_PDF_PATH")
+    if anon:
+        candidatas.append(anon)
+    candidatas.append(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "private", "202607_73212_41012682713947.pdf"))
+    )
+    candidatas.append(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "202607_73212_41012682713947.pdf"))
+    )
+    for ruta in candidatas:
+        if ruta and os.path.exists(ruta):
+            return ruta
+    return None
 
 
 _pdf_presente = _ruta_pdf() is not None

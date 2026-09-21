@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.models.consumo import AutorizacionExceso, Consumo, FacturaEtecsa, LimiteConsumo
 from app.models.telefonia import Sim
 
-_AMOUNT = r"[\d,]+\.\d{2}"
+_AMOUNT = r"[\d,]{1,12}\.\d{2}"
 _FILA_RE = re.compile(
     rf"(?P<numero>\d{{6,10}})\s*"
     rf"(?P<cuota>{_AMOUNT})\s*"
@@ -26,6 +26,10 @@ _FILA_RE = re.compile(
     rf"(?P<impuesto>{_AMOUNT})\s*"
     rf"(?P<importe>{_AMOUNT})"
 )
+
+_MAX_PAGINAS = 100
+_MAX_TEXTO_CARACTERES = 5_000_000
+_TOLERANCIA_TOTALES = Decimal("0.01")
 
 
 def _decimal(texto: str) -> Decimal:
@@ -51,6 +55,14 @@ def _campo(patron: str, texto: str) -> str | None:
 
 
 class FacturaMalFormadaError(Exception):
+    pass
+
+
+class FacturaDemasiadoGrandeError(Exception):
+    pass
+
+
+class TotalesIncoherentesError(Exception):
     pass
 
 
@@ -151,9 +163,48 @@ def extraer_texto_pdf(contenido: bytes) -> str:
 
     texto_paginas = []
     with pdfplumber.open(io.BytesIO(contenido)) as pdf:
+        if len(pdf.pages) > _MAX_PAGINAS:
+            raise FacturaDemasiadoGrandeError(
+                f"El PDF excede el numero maximo de paginas ({_MAX_PAGINAS})"
+            )
         for pagina in pdf.pages:
             texto_paginas.append(pagina.extract_text() or "")
-    return "\n".join(texto_paginas)
+    texto = "\n".join(texto_paginas)
+    if len(texto) > _MAX_TEXTO_CARACTERES:
+        raise FacturaDemasiadoGrandeError("El PDF excede el tamano maximo de texto extraible")
+    return texto
+
+
+def _verificar_totales(datos: dict) -> None:
+    """Verifica que la fila Total de la factura coincida con la suma de sus
+    servicios (tolerancia de centimos). Lanza TotalesIncoherentesError."""
+    if datos["cuota_total"] is None:
+        return
+    comprobaciones = (
+        ("cuota_total", "cuota"),
+        ("consumo_total", "consumo"),
+        ("comision_total", "comision"),
+        ("impuesto_total", "impuesto"),
+        ("facturado_total", "importe"),
+    )
+    desviaciones = []
+    for esperado, campo in comprobaciones:
+        suma = sum((fila[campo] for fila in datos["filas"]), start=Decimal("0"))
+        if abs(suma - datos[esperado]) > _TOLERANCIA_TOTALES:
+            desviaciones.append(f"{campo}: {suma} != {datos[esperado]}")
+    if desviaciones:
+        raise TotalesIncoherentesError(
+            "La fila Total no coincide con la suma de los servicios: " + "; ".join(desviaciones)
+        )
+
+
+def _rango_mes(periodo: str) -> tuple[date, date]:
+    """Devuelve (primer_dia, ultimo_dia) del periodo 'YYYY-MM'."""
+    import calendar
+
+    anio, mes = (int(p) for p in periodo.split("-"))
+    ultimo = calendar.monthrange(anio, mes)[1]
+    return date(anio, mes, 1), date(anio, mes, ultimo)
 
 
 def evaluacion_limite(db: Session, sim_id: int, periodo: str) -> tuple[Decimal | None, Decimal | None, bool]:
@@ -161,31 +212,38 @@ def evaluacion_limite(db: Session, sim_id: int, periodo: str) -> tuple[Decimal |
 
     La autorizacion especial vigente tiene prioridad sobre el limite normal:
     devuelve (limite_normal, limite_efectivo, con_autorizacion). Cuando hay
-    autorizacion, el limite_efectivo es el limite_autorizado."""
-    fecha_ref = datetime.strptime(periodo + "-01", "%Y-%m-%d").date()
+    autorizacion, el limite_efectivo es el limite_autorizado. Un limite o
+    autorizacion aplica si su vigencia se SOLAPA con el mes del periodo: se
+    toma el de vigente_desde mas reciente (normal) y el de mayor
+    limite_autorizado (autorizacion)."""
+    inicio, fin = _rango_mes(periodo)
 
     autorizacion = db.scalar(
-        select(AutorizacionExceso).where(
+        select(AutorizacionExceso)
+        .where(
             AutorizacionExceso.sim_id == sim_id,
-            AutorizacionExceso.fecha_inicio <= fecha_ref,
-            (AutorizacionExceso.fecha_fin.is_(None)) | (AutorizacionExceso.fecha_fin >= fecha_ref),
+            AutorizacionExceso.fecha_inicio <= fin,
+            (AutorizacionExceso.fecha_fin.is_(None)) | (AutorizacionExceso.fecha_fin >= inicio),
         )
+        .order_by(AutorizacionExceso.limite_autorizado.desc())
+        .limit(1)
     )
+    limite_normal = _limite_normal(db, sim_id, inicio, fin)
     if autorizacion is not None:
-        limite_normal = _limite_normal(db, sim_id, fecha_ref)
         return limite_normal, autorizacion.limite_autorizado, True
-
-    limite_normal = _limite_normal(db, sim_id, fecha_ref)
     return limite_normal, limite_normal, False
 
 
-def _limite_normal(db: Session, sim_id: int, fecha_ref: date) -> Decimal | None:
+def _limite_normal(db: Session, sim_id: int, inicio: date, fin: date) -> Decimal | None:
     limite = db.scalar(
-        select(LimiteConsumo).where(
+        select(LimiteConsumo)
+        .where(
             LimiteConsumo.sim_id == sim_id,
-            LimiteConsumo.vigente_desde <= fecha_ref,
-            (LimiteConsumo.vigente_hasta.is_(None)) | (LimiteConsumo.vigente_hasta >= fecha_ref),
+            LimiteConsumo.vigente_desde <= fin,
+            (LimiteConsumo.vigente_hasta.is_(None)) | (LimiteConsumo.vigente_hasta >= inicio),
         )
+        .order_by(LimiteConsumo.vigente_desde.desc())
+        .limit(1)
     )
     return limite.valor_limite if limite is not None else None
 
@@ -193,6 +251,7 @@ def _limite_normal(db: Session, sim_id: int, fecha_ref: date) -> Decimal | None:
 def importar_factura(db: Session, contenido: bytes, nombre_archivo: str) -> dict:
     texto = extraer_texto_pdf(contenido)
     datos = parsear_factura(texto)
+    _verificar_totales(datos)
 
     existente = db.scalar(select(FacturaEtecsa).where(FacturaEtecsa.no_factura == datos["no_factura"]))
     if existente is not None:

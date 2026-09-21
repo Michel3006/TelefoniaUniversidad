@@ -9,6 +9,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  recargar: () => Promise<Usuario | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -53,6 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.assign("/login");
   }, []);
 
+  const recargar = useCallback(async (): Promise<Usuario | null> => {
+    if (!tokenStore.get()) return null;
+    try {
+      const me = await api<Usuario>("/auth/me");
+      setUser(me);
+      return me;
+    } catch {
+      tokenStore.clear();
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   // El rol viene anidado en /auth/me (usuario.rol.nombre) — ver
   // backend/app/schemas/auth.py::UsuarioRead. Si tu backend todavía
   // no expone `rol`, esto siempre da false: actualizá el backend
@@ -60,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.rol?.nombre?.toLowerCase() === "admin";
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout, recargar }}>
       {children}
     </AuthContext.Provider>
   );

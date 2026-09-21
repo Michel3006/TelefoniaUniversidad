@@ -27,3 +27,7 @@ coverage/
 # Paquetes/documentos temporales
 *.zip
 *.exe
+
+# Facturas ETECSA en la raiz (datos personales reales) y PDFs de prueba locales
+/*.pdf
+backend/tests/private/

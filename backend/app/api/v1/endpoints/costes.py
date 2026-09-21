@@ -14,10 +14,12 @@ router = APIRouter(prefix="/costes", tags=["costes"])
 @router.get("/por-periodo", response_model=list[CosteRead])
 def por_periodo(
     periodo: str = Query(..., description="Formato: YYYY-MM"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
     return db.scalars(
-        select(Coste).where(Coste.periodo == periodo)
+        select(Coste).where(Coste.periodo == periodo).offset(skip).limit(limit)
     ).all()
 
 
@@ -28,14 +30,24 @@ build_crud(
 
 
 @router.get("/por-departamento/{departamento_id}", response_model=list[CosteRead])
-def por_departamento(departamento_id: int, db: Session = Depends(get_db)):
+def por_departamento(
+    departamento_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     return db.scalars(
-        select(Coste).where(Coste.departamento_id == departamento_id)
+        select(Coste).where(Coste.departamento_id == departamento_id).offset(skip).limit(limit)
     ).all()
 
 
 @router.get("/por-sim/{sim_id}", response_model=list[CosteRead])
-def por_sim(sim_id: int, db: Session = Depends(get_db)):
+def por_sim(
+    sim_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     return db.scalars(
-        select(Coste).where(Coste.sim_id == sim_id)
+        select(Coste).where(Coste.sim_id == sim_id).offset(skip).limit(limit)
     ).all()

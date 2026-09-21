@@ -115,8 +115,10 @@ export function validarCampo(valor: string, campo: ReglaCampo): string | null {
       return null;
     }
     case "password": {
-      const min = campo.min ?? 6;
+      const min = campo.min ?? 10;
       if (v.length < min) return `Debe tener al menos ${min} caracteres.`;
+      if (!/[A-Za-z]/.test(v)) return "Debe contener al menos una letra.";
+      if (!/\d/.test(v)) return "Debe contener al menos un dígito.";
       return null;
     }
     case "select":

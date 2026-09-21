@@ -5,6 +5,7 @@ El sistema no consulta ASSETS_RH en tiempo real: un proceso de sincronizacion
 locales de espejo (cargos, areas, departamentos.id_direccion, personas.*).
 """
 from datetime import date
+import logging
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -50,6 +51,16 @@ def _entero(valor) -> int | None:
         return None
 
 
+def _odbc_val(v: str) -> str:
+    """Escapa un valor para la cadena de conexion ODBC (llaves duplicadas)."""
+    return "{" + v.replace("}", "}}") + "}"
+
+
+def _validar_odbc_campo(nombre: str, valor: str) -> None:
+    if any(c in valor for c in ";{}"):
+        raise ValueError(f"Campo {nombre} invalido para la cadena ODBC")
+
+
 def conectar_rrhh():
     """Abre conexion a ASSETS_RH. Lanza RuntimeError si no esta habilitado."""
     if not settings.assets_rrhh_habilitado:
@@ -58,21 +69,30 @@ def conectar_rrhh():
         )
     if not settings.assets_rrhh_username or not settings.assets_rrhh_password:
         raise RuntimeError("Faltan credenciales ASSETS_RRH_USERNAME / ASSETS_RRH_PASSWORD")
+    if not settings.assets_rrhh_server:
+        raise RuntimeError("No se definio ASSETS_RRH_SERVER")
+
+    _validar_odbc_campo("SERVER", settings.assets_rrhh_server)
+    _validar_odbc_campo("DATABASE", settings.assets_rrhh_database)
 
     import pyodbc  # noqa: PLC0415
 
     cadena = (
         f"DRIVER={{{settings.assets_rrhh_driver}}};"
-        f"SERVER={settings.assets_rrhh_server};"
-        f"DATABASE={settings.assets_rrhh_database};"
-        f"UID={settings.assets_rrhh_username};"
-        f"PWD={settings.assets_rrhh_password};"
-        "TrustServerCertificate=yes"
+        f"SERVER={_odbc_val(settings.assets_rrhh_server)};"
+        f"DATABASE={_odbc_val(settings.assets_rrhh_database)};"
+        f"UID={_odbc_val(settings.assets_rrhh_username)};"
+        f"PWD={_odbc_val(settings.assets_rrhh_password)};"
+        f"Encrypt={'yes' if settings.assets_rrhh_encrypt else 'no'};"
+        f"TrustServerCertificate={'yes' if settings.assets_rrhh_trust_server_certificate else 'no'}"
     )
     try:
-        return pyodbc.connect(cadena)
+        return pyodbc.connect(cadena, timeout=settings.assets_rrhh_timeout)
     except Exception as exc:  # noqa: BLE001
-        raise RuntimeError(f"No se pudo conectar a ASSETS_RH: {exc}") from exc
+        logging.getLogger("app.services.institucional").exception(
+            "No se pudo conectar a ASSETS_RH (server=%s)", settings.assets_rrhh_server
+        )
+        raise RuntimeError("No se pudo conectar a ASSETS_RH") from exc
 
 
 _SQL = {
@@ -247,6 +267,9 @@ def aplicar(db: Session, datos: dict) -> dict:
 
 def sincronizar_desde_rrhh(db: Session) -> dict:
     """Conecta a ASSETS_RH, lee y aplica la sincronizacion completa."""
-    with conectar_rrhh() as conn:
+    from contextlib import closing
+
+    conn = conectar_rrhh()
+    with closing(conn):
         datos = leer_recursos_rrhh(conn)
     return aplicar(db, datos)
