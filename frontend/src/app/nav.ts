@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  BookOpen,
   Building2,
   Database,
   FileText,
@@ -11,7 +12,6 @@ import {
   ReceiptText,
   ShieldCheck,
   Shuffle,
-  SlidersHorizontal,
   Smartphone,
   Tags,
   Users,
@@ -39,8 +39,8 @@ export const NAV: NavGroup[] = [
     titulo: "Directorio",
     items: [
       { label: "Personas", to: "/personas", icon: Users },
+      { label: "Guía telefónica", to: "/guia-telefonica", icon: BookOpen },
       { label: "Departamentos", to: "/departamentos", icon: UsersRound },
-      { label: "Locales", to: "/locales", icon: Building2 },
     ],
   },
   {
@@ -54,17 +54,13 @@ export const NAV: NavGroup[] = [
   },
   {
     titulo: "Contratos",
-    items: [
-      { label: "Contratos", to: "/contratos", icon: FileText },
-      { label: "Planes", to: "/planes", icon: FileText },
-    ],
+    items: [{ label: "Contratos", to: "/contratos", icon: FileText }],
   },
   {
     titulo: "Operación",
     items: [
       { label: "Consumo", to: "/consumo", icon: ReceiptText },
       { label: "Reportes", to: "/reportes", icon: BarChart3 },
-      { label: "Límites", to: "/limites", icon: SlidersHorizontal, soloAdmin: true },
       { label: "Autorizaciones", to: "/autorizaciones", icon: ShieldCheck, soloAdmin: true },
     ],
   },
@@ -79,7 +75,6 @@ export const NAV: NavGroup[] = [
   {
     titulo: null,
     items: [
-      { label: "Costos", to: "/costes", icon: FileText },
       { label: "Asignaciones", to: "/asignaciones", icon: Shuffle },
       { label: "Historial", to: "/historial", icon: History, soloAdmin: true },
     ],

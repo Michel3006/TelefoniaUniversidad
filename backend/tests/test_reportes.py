@@ -8,33 +8,7 @@ def test_inventario(client: TestClient, auth_headers):
     assert "telefonos_fijos" in data
     assert "sims" in data
     assert "dispositivos" in data
-    assert "edificios" in data
-    assert "locales" in data
     assert "personas" in data
-
-
-def test_costes_totales(client: TestClient, auth_headers):
-    response = client.get("/api/v1/reportes/costes-totales", headers=auth_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert "importe_total" in data
-    assert "periodos" in data
-
-
-def test_costes_por_departamento(client: TestClient, auth_headers):
-    response = client.get(
-        "/api/v1/reportes/costes-por-departamento", headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
-
-
-def test_costes_por_periodo(client: TestClient, auth_headers):
-    response = client.get(
-        "/api/v1/reportes/costes-por-periodo", headers=auth_headers
-    )
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
 
 
 def test_recursos_por_departamento(client: TestClient, auth_headers):
@@ -81,12 +55,7 @@ def _subir_factura(client: TestClient, auth_headers, monkeypatch):
 
 
 def test_consumo_por_periodo(client: TestClient, auth_headers, monkeypatch):
-    sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={"sim_id": sim.json()["id"], "valor_limite": "10.00", "vigente_desde": "2026-01-01"},
-    )
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
     _subir_factura(client, auth_headers, monkeypatch)
 
     response = client.get("/api/v1/reportes/consumo-por-periodo", headers=auth_headers)
@@ -100,12 +69,7 @@ def test_consumo_por_periodo(client: TestClient, auth_headers, monkeypatch):
 
 
 def test_reporte_excesos(client: TestClient, auth_headers, monkeypatch):
-    sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={"sim_id": sim.json()["id"], "valor_limite": "10.00", "vigente_desde": "2026-01-01"},
-    )
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
     _subir_factura(client, auth_headers, monkeypatch)
 
     response = client.get("/api/v1/reportes/excesos", headers=auth_headers)
@@ -147,10 +111,8 @@ def test_recursos_sin_asignar(client: TestClient, auth_headers):
     assert any(t["descripcion"] == "33220001" for t in data["telefonos"])
 
 
-def test_recursos_por_persona(client: TestClient, auth_headers):
-    persona = client.post(
-        "/api/v1/personas/", headers=auth_headers, json={"nombre": "Ana", "apellido": "Lopez"}
-    )
+def test_recursos_por_persona(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona(nombre="Ana", apellido="Lopez")
     sim = client.post(
         "/api/v1/sims/", headers=auth_headers, json={"numero": "5491999999999"}
     )
@@ -158,7 +120,7 @@ def test_recursos_por_persona(client: TestClient, auth_headers):
         "/api/v1/asignaciones/",
         headers=auth_headers,
         json={
-            "persona_id": persona.json()["id"],
+            "persona_id": persona_id,
             "tipo_recurso": "sim",
             "recurso_id": sim.json()["id"],
             "fecha_inicio": "2026-01-01",
@@ -169,7 +131,7 @@ def test_recursos_por_persona(client: TestClient, auth_headers):
     assert response.status_code == 200
     data = response.json()
     assert any(
-        p["persona_id"] == persona.json()["id"]
+        p["persona_id"] == persona_id
         and any(r["tipo_recurso"] == "sim" for r in p["recursos"])
         for p in data
     )

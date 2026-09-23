@@ -65,6 +65,21 @@ def db() -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
+def crear_persona(db: Session):
+    """Crea una persona directamente en la BD (el API de personas es solo lectura)."""
+    from app.models.personas import Persona
+
+    def _crear(nombre: str = "Juan", apellido: str = "Perez", **extra) -> int:
+        persona = Persona(nombre=nombre, apellido=apellido, **extra)
+        db.add(persona)
+        db.commit()
+        db.refresh(persona)
+        return persona.id
+
+    return _crear
+
+
+@pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     with TestClient(app) as c:
         yield c

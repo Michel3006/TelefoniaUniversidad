@@ -77,6 +77,9 @@ export function PersonasPage() {
                 <div className="flex justify-between"><dt className="text-neutro">Departamento</dt><dd>{nombreDepto(verDetalle.departamento_id)}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">Documento</dt><dd className="dato">{verDetalle.documento ?? "—"}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">CCosto</dt><dd className="dato">{verDetalle.id_ccosto ?? "—"}</dd></div>
+                <div className="flex justify-between"><dt className="text-neutro">Cubículo</dt><dd className="dato">{verDetalle.cubiculo ?? "—"}</dd></div>
+                <div className="flex justify-between"><dt className="text-neutro">Dirección</dt><dd className="dato">{verDetalle.direccion ?? "—"}</dd></div>
+                <div className="flex justify-between"><dt className="text-neutro">Ciudad</dt><dd className="dato">{verDetalle.ciudad ?? "—"}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">Altas</dt><dd className="dato">{verDetalle.exttelef ?? "—"}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">Estado</dt><dd>{verDetalle.baja ? <span className="text-linea-baja">Baja</span> : <span className="text-linea-ok">Activo</span>}</dd></div>
               </dl>

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from app.models.asignaciones import Asignacion
 from app.models.consumo import Consumo
-from app.models.organizacion import Local
 from app.models.personas import Persona
 from app.models.telefonia import Dispositivo, Extension, Sim, Telefono
 
@@ -49,21 +48,12 @@ def get_telefono_detalle(db: Session, telefono_id: int) -> dict | None:
             }
         )
 
-    local_nombre = None
-    edificio_nombre = None
-    if telefono.local:
-        local_nombre = telefono.local.descripcion or (
-            f"Piso {telefono.local.piso} - {telefono.local.oficina}" if telefono.local.piso or telefono.local.oficina else None
-        )
-        edificio_nombre = telefono.local.edificio.nombre if telefono.local.edificio else None
-
     return {
         "id": telefono.id,
         "numero": telefono.numero,
-        "local": local_nombre,
-        "edificio": edificio_nombre,
         "estado": telefono.estado.nombre if telefono.estado else None,
         "observaciones": telefono.observaciones,
+        "responsable": persona_nombre(db, get_responsable_id(db, "telefono", telefono_id)),
         "extensiones": extensiones,
     }
 
@@ -86,7 +76,6 @@ def get_sim_detalle(db: Session, sim_id: int) -> dict | None:
         "id": sim.id,
         "numero": sim.numero,
         "operador": sim.operador,
-        "plan": sim.plan.nombre if sim.plan else None,
         "iccid": sim.iccid,
         "imsi": sim.imsi,
         "estado": sim.estado.nombre if sim.estado else None,

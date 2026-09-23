@@ -24,6 +24,9 @@ class Persona(Base):
     id_ccosto: Mapped[str | None] = mapped_column(String(10))
     cargo_id: Mapped[int | None] = mapped_column(ForeignKey("cargos.id"))
     area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id"))
+    cubiculo: Mapped[str | None] = mapped_column(String(50))
+    direccion: Mapped[str | None] = mapped_column(String(255))
+    ciudad: Mapped[str | None] = mapped_column(String(50))
     baja: Mapped[bool] = mapped_column(Boolean, default=False)
 
     departamento: Mapped["Departamento | None"] = relationship()

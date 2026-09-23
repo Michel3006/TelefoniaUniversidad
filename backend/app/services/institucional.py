@@ -116,6 +116,7 @@ _SQL = {
         "Apellido_2 AS apellido_2, Exttelef AS exttelef, "
         "Telefono_Particular AS telefono_particular, Id_CCosto AS id_ccosto, "
         "Id_Cargo AS id_cargo, Id_Direccion AS id_direccion, "
+        "Cubiculo AS cubiculo, Direccion AS direccion, Ciudad AS ciudad, "
         "Baja AS baja FROM Empleados_Gral ORDER BY Id_Empleado"
     ),
 }
@@ -228,6 +229,9 @@ def _aplicar_empleados(db: Session, filas: list[dict]) -> int:
         persona.exttelef = _texto(fila.get("exttelef"))
         persona.id_expediente = _texto(fila.get("id_expediente"))
         persona.id_ccosto = _texto(fila.get("id_ccosto"))
+        persona.cubiculo = _texto(fila.get("cubiculo"))
+        persona.direccion = _texto(fila.get("direccion"))
+        persona.ciudad = _texto(fila.get("ciudad"))
         persona.baja = _booleano(fila.get("baja"))
 
         id_dir = _texto(fila.get("id_direccion"))

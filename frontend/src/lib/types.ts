@@ -45,6 +45,9 @@ export interface Persona {
   id_ccosto: string | null;
   cargo_id: number | null;
   area_id: number | null;
+  cubiculo: string | null;
+  direccion: string | null;
+  ciudad: string | null;
   baja: boolean;
 }
 
@@ -60,20 +63,6 @@ export interface Departamento {
   baja: boolean;
 }
 
-export interface Edificio {
-  id: number;
-  nombre: string;
-  direccion: string | null;
-}
-
-export interface Local {
-  id: number;
-  edificio_id: number;
-  piso: string | null;
-  oficina: string | null;
-  descripcion: string | null;
-}
-
 export interface Estado {
   id: number;
   nombre: string;
@@ -83,7 +72,6 @@ export interface Estado {
 export interface Telefono {
   id: number;
   numero: string;
-  local_id: number | null;
   estado_id: number | null;
   observaciones: string | null;
 }
@@ -102,7 +90,6 @@ export interface Sim {
   iccid: string | null;
   imsi: string | null;
   operador: string;
-  plan_id: number | null;
   estado_id: number | null;
 }
 
@@ -112,7 +99,6 @@ export interface Dispositivo {
   modelo: string;
   imei: string;
   sim_id: number | null;
-  local_id: number | null;
   estado_id: number | null;
   observaciones: string | null;
 }
@@ -123,24 +109,6 @@ export interface Contrato {
   observaciones: string | null;
   fecha_inicio: string | null;
   fecha_vencimiento: string | null;
-}
-
-export interface Plan {
-  id: number;
-  nombre: string;
-  operador: string;
-  contrato_id: number | null;
-  coste_mensual: string | null;
-  descripcion: string | null;
-}
-
-export interface Coste {
-  id: number;
-  periodo: string;
-  importe: string;
-  observaciones: string | null;
-  departamento_id: number | null;
-  sim_id: number | null;
 }
 
 export interface Asignacion {
@@ -177,10 +145,9 @@ export interface ExtensionResumen {
 export interface TelefonoDetalle {
   id: number;
   numero: string;
-  local: string | null;
-  edificio: string | null;
   estado: string | null;
   observaciones: string | null;
+  responsable: string | null;
   extensiones: ExtensionResumen[];
 }
 
@@ -188,7 +155,6 @@ export interface SimDetalle {
   id: number;
   numero: string;
   operador: string | null;
-  plan: string | null;
   iccid: string | null;
   imsi: string | null;
   estado: string | null;
@@ -198,46 +164,11 @@ export interface SimDetalle {
   en_exceso_ultimo_periodo: boolean | null;
 }
 
-export interface PlanResumen {
-  id: number;
-  nombre: string;
-  operador: string | null;
-  coste_mensual: string | null;
-}
-
-export interface ContratoDetalle {
-  id: number;
-  numero: string;
-  observaciones: string | null;
-  fecha_inicio: string | null;
-  fecha_vencimiento: string | null;
-  planes: PlanResumen[];
-}
-
 export interface InventarioReporte {
   telefonos_fijos: number;
   sims: number;
   dispositivos: number;
-  edificios: number;
-  locales: number;
   personas: number;
-}
-
-export interface CostesTotalesReporte {
-  importe_total: number | null;
-  periodos: number;
-}
-
-export interface CostePorDepartamento {
-  departamento_id: number | null;
-  total: string | number;
-  cantidad: number;
-}
-
-export interface CostePorPeriodo {
-  periodo: string;
-  total: string | number;
-  cantidad: number;
 }
 
 export interface SincronizacionResumen {
@@ -292,18 +223,12 @@ export interface ImportacionResumen {
   periodo: string;
   procesados: number;
   asociados: number;
+  sims_creadas: number;
   no_asociados: number;
   excesos: number;
+  alarmas: number;
   numeros_no_asociados: string[];
-}
-
-export interface LimiteConsumo {
-  id: number;
-  sim_id: number;
-  valor_limite: string;
-  vigente_desde: string;
-  vigente_hasta: string | null;
-  observaciones: string | null;
+  numeros_sims_creadas: string[];
 }
 
 export interface AutorizacionExceso {
@@ -367,4 +292,27 @@ export interface RecursosPorPersona {
   nombre: string;
   departamento_id: number | null;
   recursos: RecursoPersona[];
+}
+
+export interface RecursoGuia {
+  tipo: string;
+  recurso_id: number;
+  etiqueta: string;
+}
+
+export interface GuiaTelefonica {
+  persona_id: number;
+  nombre: string;
+  apellido: string;
+  apellido_2: string | null;
+  id_empleado: string | null;
+  cargo: string | null;
+  area: string | null;
+  departamento: string | null;
+  cubiculo: string | null;
+  exttelef: string | null;
+  telefono: string | null;
+  documento: string | null;
+  email: string | null;
+  recursos: RecursoGuia[];
 }

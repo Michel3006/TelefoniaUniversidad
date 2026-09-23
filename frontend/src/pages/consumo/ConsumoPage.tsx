@@ -63,7 +63,7 @@ function ImportarPdfTarjeta() {
           <Upload className="mr-2 h-4 w-4" />
           {importar.isPending ? "Procesando PDF…" : "Importar factura ETECSA (PDF)"}
         </Button>
-        <p className="text-sm text-neutro">El PDF se procesa, se guarda el histórico de consumo y se detectan excesos automáticamente.</p>
+        <p className="text-sm text-neutro">El PDF se procesa, se guarda el histórico de consumo, se registran las SIMs nuevas y se detectan excesos automáticamente.</p>
       </div>
 
       {resumen && (
@@ -78,7 +78,15 @@ function ImportarPdfTarjeta() {
             </span>
             <span className="dato">{resumen.procesados} servicios procesados</span>
             <span className="dato">{resumen.asociados} asociados</span>
-            <span className="dato">{resumen.no_asociados} sin asociar</span>
+            {resumen.sims_creadas > 0 && (
+              <span className="dato">{resumen.sims_creadas} SIMs creadas</span>
+            )}
+            {resumen.no_asociados > 0 && (
+              <span className="dato">{resumen.no_asociados} sin asociar</span>
+            )}
+            {resumen.numeros_sims_creadas.length > 0 && (
+              <span className="text-neutro">Nuevas SIMs: {resumen.numeros_sims_creadas.join(", ")}</span>
+            )}
             <span className="dato">{resumen.excesos} excesos</span>
           </div>
         </div>
@@ -264,7 +272,7 @@ export function ConsumoPage() {
               columns={columnasConsumos}
               data={noAsociados.data ?? []}
               vacioTitulo="Todas las facturas importadas tienen su SIM asociada."
-              vacioDescripcion="Los números que no coinciden con una SIM registrada aparecen aquí para su revisión manual."
+              vacioDescripcion="Los números fijos que no coinciden con una SIM registrada aparecen aquí; los móviles se registran automáticamente."
             />
           )}
         </>

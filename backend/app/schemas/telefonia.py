@@ -20,7 +20,6 @@ _PATRON_IMEI = r"^\d{15}$"
 
 class TelefonoBase(BaseModel):
     numero: str
-    local_id: int | None = None
     estado_id: int | None = None
     observaciones: str | None = None
 
@@ -85,7 +84,6 @@ class SimBase(BaseModel):
     iccid: str | None = None
     imsi: str | None = None
     operador: str = "ETECSA"
-    plan_id: int | None = None
     estado_id: int | None = None
 
     @field_validator("numero")
@@ -132,7 +130,6 @@ class DispositivoBase(BaseModel):
     modelo: str
     imei: str
     sim_id: int | None = None
-    local_id: int | None = None
     estado_id: int | None = None
     observaciones: str | None = None
 
@@ -171,10 +168,9 @@ class ExtensionResumen(BaseModel):
 class TelefonoDetalle(BaseModel):
     id: int
     numero: str
-    local: str | None = None
-    edificio: str | None = None
     estado: str | None = None
     observaciones: str | None = None
+    responsable: str | None = None
     extensiones: list[ExtensionResumen] = []
 
 
@@ -182,7 +178,6 @@ class SimDetalle(BaseModel):
     id: int
     numero: str
     operador: str | None = None
-    plan: str | None = None
     iccid: str | None = None
     imsi: str | None = None
     estado: str | None = None

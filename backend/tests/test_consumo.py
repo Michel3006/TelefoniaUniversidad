@@ -43,32 +43,77 @@ def test_importar_factura(client: TestClient, auth_headers, monkeypatch):
     assert data["no_factura"] == "41012682713947"
     assert data["periodo"] == "2026-07"
     assert data["procesados"] == 4
-    assert data["asociados"] == 0
-    assert data["no_asociados"] == 4
-    assert data["excesos"] == 0
-    assert "59921173" in data["numeros_no_asociados"]
+    assert data["asociados"] == 4
+    assert data["sims_creadas"] == 4
+    assert data["no_asociados"] == 0
+    # Punto 7: excedente = consumo > 0 sin autorizacion => exceso + alarma.
+    # Filas 52880232 (38.94) y 52885278 (3.15) tienen consumo > 0.
+    assert data["excesos"] == 2
+    assert data["alarmas"] == 2
+    assert "59921173" in data["numeros_sims_creadas"]
+    assert data["numeros_no_asociados"] == []
 
 
 def test_importar_factura_asocia_sims_y_detecta_excesos(client: TestClient, auth_headers, monkeypatch):
-    sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "59921173"})
-    sim_asociada = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={
-            "sim_id": sim_asociada.json()["id"],
-            "valor_limite": "10.00",
-            "vigente_desde": "2026-01-01",
-        },
-    )
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "59921173"})
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
 
     response = _subir_factura(client, auth_headers, monkeypatch)
     assert response.status_code == 200
     data = response.json()
-    assert data["asociados"] == 2
-    assert data["no_asociados"] == 2
-    assert data["excesos"] == 1
-    assert "59921173" not in data["numeros_no_asociados"]
+    assert data["asociados"] == 4
+    assert data["sims_creadas"] == 2
+    assert data["no_asociados"] == 0
+    assert data["excesos"] == 2
+    assert data["alarmas"] == 2
+    assert "59921173" not in data["numeros_sims_creadas"]
+
+
+FACTURA_CON_FIJOS = """
+Número de Cliente:7166091
+Folio: 00062640
+No. factura: 41012682713948
+Fecha de Vencimiento: 31/08/26
+Periodo de consumo: 01/07/26 – 31/07/26
+Moneda: CUP
+Fecha Factura: 05/08/26
+Cuota Mensual Consumo Comisión Impuesto Facturado Atraso Total a Pagar
+105,903.00 1,011.31 0.00 0.00 106,914.31 182,226.21 289,140.52
+Desglose (Consumo)
+Consumo Voz 700.80
+Consumo SMS 310.51
+Resumen por Servicios
+Servicio Cuota Consumo Comisión Impuesto Importe
+59921173 560.00 0.00 0.00 0.00 560.0072814563 110.00 0.00 0.00 0.00 110.00
+Total 670.00 0.00 0.00 0.00 670.00
+Pagar a:
+"""
+
+
+def test_importar_factura_fijos_no_se_crean(client: TestClient, auth_headers, monkeypatch):
+    """Los numeros fijos (que no tienen 8 digitos iniciando con 5/6) no se
+    crean como SIM: quedan como consumo sin asociar."""
+    monkeypatch.setattr(
+        "app.services.consumo.extraer_texto_pdf",
+        lambda contenido: FACTURA_CON_FIJOS,
+    )
+    response = client.post(
+        "/api/v1/consumo/importar-pdf",
+        headers=auth_headers,
+        files={"archivo": ("factura.pdf", b"%PDF-contenido-simulado", "application/pdf")},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["procesados"] == 2
+    assert data["asociados"] == 1
+    assert data["sims_creadas"] == 1
+    assert data["no_asociados"] == 1
+    assert data["numeros_sims_creadas"] == ["59921173"]
+    assert data["numeros_no_asociados"] == ["72814563"]
+
+    sims = client.get("/api/v1/sims/", headers=auth_headers).json()
+    assert [s["numero"] for s in sims] == ["59921173"]
+    assert "72814563" not in [s["numero"] for s in sims]
 
 
 def test_importar_factura_duplicada_conflicto(client: TestClient, auth_headers, monkeypatch):
@@ -170,21 +215,16 @@ def test_consumo_no_asociados(client: TestClient, auth_headers, monkeypatch):
     _subir_factura(client, auth_headers, monkeypatch)
     response = client.get("/api/v1/consumo/no-asociados", headers=auth_headers)
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert response.json() == []
 
 
 def test_consumo_excesos(client: TestClient, auth_headers, monkeypatch):
-    sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={"sim_id": sim.json()["id"], "valor_limite": "10.00", "vigente_desde": "2026-01-01"},
-    )
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
     _subir_factura(client, auth_headers, monkeypatch)
     response = client.get("/api/v1/consumo/excesos", headers=auth_headers)
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["en_exceso"] is True
+    assert len(response.json()) == 2
+    assert all(fila["en_exceso"] is True for fila in response.json())
 
 
 def test_factura_detalle_incluye_consumos(client: TestClient, auth_headers, monkeypatch):
@@ -238,50 +278,48 @@ def test_importar_factura_registra_historial(client: TestClient, auth_headers, m
     assert "importado" in acciones
 
 
-def test_exceso_con_autorizacion_marca_campo(client: TestClient, auth_headers, monkeypatch):
-    """Consumo que supera el limite normal pero esta cubierto por una
-    autorizacion vigente: queda con_autorizacion=True y limite_efectivo=limite
-    autorizado."""
+def test_exceso_con_autorizacion_marca_campo(client: TestClient, auth_headers, monkeypatch, crear_persona):
+    """Consumo > 0 sin autorizacion queda en_exceso y genera alarma;
+    con autorizacion vigente queda con_autorizacion=True y en_exceso=False.
+    El limite (normal/efectivo) es la cuota del PDF."""
     sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
     sim_id = sim.json()["id"]
-    persona = client.post(
-        "/api/v1/personas/", headers=auth_headers, json={"nombre": "Ana", "apellido": "Lopez"}
-    )
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={"sim_id": sim_id, "valor_limite": "10.00", "vigente_desde": "2026-01-01"},
-    )
+    persona_id = crear_persona(nombre="Ana", apellido="Lopez")
 
     response = _subir_factura(client, auth_headers, monkeypatch)
-    assert response.json()["excesos"] == 1
+    assert response.json()["excesos"] == 2
+    assert response.json()["alarmas"] == 2
     consumo = client.get("/api/v1/consumo/", headers=auth_headers).json()
     fila_52880232 = [c for c in consumo if c["numero_detectado"] == "52880232"][0]
     assert fila_52880232["en_exceso"] is True
     assert fila_52880232["con_autorizacion"] is False
-    assert fila_52880232["limite_efectivo"] == "10.00"
+    assert fila_52880232["limite_normal"] == "455.00"
+    assert fila_52880232["limite_efectivo"] == "455.00"
 
     client.post(
         "/api/v1/autorizaciones/",
         headers=auth_headers,
         json={
             "sim_id": sim_id,
-            "persona_id": persona.json()["id"],
-            "limite_autorizado": "50.00",
+            "persona_id": persona_id,
+            "limite_autorizado": "500.00",
             "fecha_inicio": "2026-07-01",
             "fecha_fin": "2026-07-31",
         },
     )
     factura_id = client.get("/api/v1/facturas-etecsa/", headers=auth_headers).json()[0]["id"]
     client.delete(f"/api/v1/facturas-etecsa/{factura_id}", headers=auth_headers)
-    _subir_factura(client, auth_headers, monkeypatch)
+    reimport = _subir_factura(client, auth_headers, monkeypatch)
+    # 52880232 ahora esta autorizada: solo 52885278 sigue en alarma.
+    assert reimport.json()["excesos"] == 1
+    assert reimport.json()["alarmas"] == 1
 
     fila = client.get("/api/v1/consumo/", headers=auth_headers).json()
     autorizada = [c for c in fila if c["numero_detectado"] == "52880232"][0]
     assert autorizada["en_exceso"] is False
     assert autorizada["con_autorizacion"] is True
-    assert autorizada["limite_normal"] == "10.00"
-    assert autorizada["limite_efectivo"] == "50.00"
+    assert autorizada["limite_normal"] == "455.00"
+    assert autorizada["limite_efectivo"] == "455.00"
 
     excesos = client.get(
         "/api/v1/consumo/excesos", headers=auth_headers, params={"autorizado": "true"}
@@ -290,16 +328,11 @@ def test_exceso_con_autorizacion_marca_campo(client: TestClient, auth_headers, m
 
 
 def test_excesos_paginado_y_filtro_autorizado(client: TestClient, auth_headers, monkeypatch):
-    sim = client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
-    client.post(
-        "/api/v1/limites/",
-        headers=auth_headers,
-        json={"sim_id": sim.json()["id"], "valor_limite": "10.00", "vigente_desde": "2026-01-01"},
-    )
+    client.post("/api/v1/sims/", headers=auth_headers, json={"numero": "52880232"})
     _subir_factura(client, auth_headers, monkeypatch)
 
     response = client.get(
         "/api/v1/consumo/no-asociados", headers=auth_headers, params={"skip": 0, "limit": 2}
     )
     assert response.status_code == 200
-    assert len(response.json()) == 2
+    assert response.json() == []

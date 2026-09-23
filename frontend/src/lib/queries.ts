@@ -10,25 +10,17 @@ import type {
   Consumo,
   ConsumoPorPeriodo,
   Contrato,
-  ContratoDetalle,
-  CostePorDepartamento,
-  CostePorPeriodo,
-  Coste,
-  CostesTotalesReporte,
   Departamento,
   Dispositivo,
-  Edificio,
   Estado,
   ExcesoReporte,
   Extension,
   FacturaEtecsa,
+  GuiaTelefonica,
   HistorialItem,
   ImportacionResumen,
   InventarioReporte,
-  LimiteConsumo,
-  Local,
   Persona,
-  Plan,
   RecursosPorPersona,
   RecursosSinAsignar,
   Rol,
@@ -55,22 +47,17 @@ export const usePersonas = listado<Persona>("personas", "/personas/");
 export const useDepartamentos = listado<Departamento>("departamentos", "/departamentos/");
 export const useCargos = listado<Cargo>("cargos", "/cargos/");
 export const useAreas = listado<Area>("areas", "/areas/");
-export const useEdificios = listado<Edificio>("edificios", "/edificios/");
-export const useLocales = listado<Local>("locales", "/locales/");
 export const useTelefonos = listado<Telefono>("telefonos", "/telefonos/");
 export const useExtensiones = listado<Extension>("extensiones", "/extensiones/");
 export const useDispositivos = listado<Dispositivo>("dispositivos", "/dispositivos/");
 export const useSims = listado<Sim>("sims", "/sims/");
-export const usePlanes = listado<Plan>("planes", "/planes/");
 export const useContratos = listado<Contrato>("contratos", "/contratos/");
-export const useCostes = listado<Coste>("costes", "/costes/");
 export const useRoles = listado<Rol>("roles", "/roles/");
 export const useUsuarios = listado<Usuario>("usuarios", "/usuarios/");
 
 // --- Consumo ETECSA ---
 
 export const useFacturas = listado<FacturaEtecsa>("facturas", "/facturas-etecsa/");
-export const useLimites = listado<LimiteConsumo>("limites", "/limites/");
 export const useAutorizaciones = listado<AutorizacionExceso>("autorizaciones", "/autorizaciones/");
 
 export function useConsumos(params: { sim_id?: number; periodo?: string }) {
@@ -198,7 +185,7 @@ export function useTelefonoDetalle(id: number | null) {
 export function useContratoDetalle(id: number | null) {
   return useQuery({
     queryKey: ["contratos", "detalle", id],
-    queryFn: () => api<ContratoDetalle>(`/contratos/${id}/detalle`),
+    queryFn: () => api<Contrato>(`/contratos/${id}`),
     enabled: id != null,
   });
 }
@@ -218,31 +205,10 @@ export function useHistorial(entidad?: string, entidadId?: number) {
   });
 }
 
-// --- Reportes (panel principal y página de costos) ---
+// --- Reportes (panel principal) ---
 
 export function useReporteInventario() {
   return useQuery({ queryKey: ["reportes", "inventario"], queryFn: () => api<InventarioReporte>("/reportes/inventario") });
-}
-
-export function useReporteCostesTotales() {
-  return useQuery({
-    queryKey: ["reportes", "costes-totales"],
-    queryFn: () => api<CostesTotalesReporte>("/reportes/costes-totales"),
-  });
-}
-
-export function useReporteCostesPorDepartamento() {
-  return useQuery({
-    queryKey: ["reportes", "costes-por-departamento"],
-    queryFn: () => api<CostePorDepartamento[]>("/reportes/costes-por-departamento"),
-  });
-}
-
-export function useReporteCostesPorPeriodo() {
-  return useQuery({
-    queryKey: ["reportes", "costes-por-periodo"],
-    queryFn: () => api<CostePorPeriodo[]>("/reportes/costes-por-periodo"),
-  });
 }
 
 export function useReporteConsumoPorPeriodo() {
@@ -273,6 +239,13 @@ export function useReporteRecursosPorPersona() {
   return useQuery({
     queryKey: ["reportes", "recursos-por-persona"],
     queryFn: () => api<RecursosPorPersona[]>("/reportes/recursos-por-persona"),
+  });
+}
+
+export function useGuiaTelefonica() {
+  return useQuery({
+    queryKey: ["guias", "telefonica"],
+    queryFn: () => api<GuiaTelefonica[]>("/guias/telefonica"),
   });
 }
 

@@ -1,8 +1,7 @@
 from datetime import date
-from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Numeric, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Date, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
@@ -15,19 +14,3 @@ class Contrato(Base):
     observaciones: Mapped[str | None] = mapped_column(Text)
     fecha_inicio: Mapped[date | None] = mapped_column(Date)
     fecha_vencimiento: Mapped[date | None] = mapped_column(Date)
-
-    planes: Mapped[list["Plan"]] = relationship(back_populates="contrato")
-
-
-class Plan(Base):
-    __tablename__ = "planes"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(150), index=True)
-    operador: Mapped[str] = mapped_column(String(100), default="ETECSA")
-    contrato_id: Mapped[int | None] = mapped_column(ForeignKey("contratos.id"))
-    coste_mensual: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
-    descripcion: Mapped[str | None] = mapped_column(Text)
-
-    contrato: Mapped[Contrato | None] = relationship(back_populates="planes")
-    sims: Mapped[list["Sim"]] = relationship(back_populates="plan")

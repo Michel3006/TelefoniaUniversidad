@@ -19,6 +19,9 @@ PAYLOAD = {
             "id_ccosto": "CC01",
             "id_cargo": "01",
             "id_direccion": "100",
+            "cubiculo": "A-205",
+            "direccion": "Calle 12, Vedado",
+            "ciudad": "La Habana",
             "baja": False,
         }
     ],
@@ -55,6 +58,9 @@ def test_rh_json_sincroniza(client: TestClient, auth_headers):
     assert persona["apellido"] == "Perez"
     assert persona["cargo_id"] is not None
     assert persona["area_id"] is not None
+    assert persona["cubiculo"] == "A-205"
+    assert persona["direccion"] == "Calle 12, Vedado"
+    assert persona["ciudad"] == "La Habana"
 
 
 def test_rh_json_idempotente(client: TestClient, auth_headers):

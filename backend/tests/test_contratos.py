@@ -47,33 +47,6 @@ def test_delete_contrato(client: TestClient, auth_headers):
     assert response.status_code == 204
 
 
-def test_detalle_contrato_con_planes(client: TestClient, auth_headers):
-    create = client.post("/api/v1/contratos/", headers=auth_headers, json={"numero": "C-006"})
-    contrato_id = create.json()["id"]
-    client.post(
-        "/api/v1/planes/",
-        headers=auth_headers,
-        json={
-            "nombre": "Plan Movil",
-            "operador": "ETECSA",
-            "contrato_id": contrato_id,
-            "coste_mensual": "150.00",
-        },
-    )
-
-    response = client.get(f"/api/v1/contratos/{contrato_id}/detalle", headers=auth_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["numero"] == "C-006"
-    assert len(data["planes"]) == 1
-    assert data["planes"][0]["nombre"] == "Plan Movil"
-
-
-def test_detalle_contrato_not_found(client: TestClient, auth_headers):
-    response = client.get("/api/v1/contratos/99999/detalle", headers=auth_headers)
-    assert response.status_code == 404
-
-
 def test_consulta_no_puede_crear_contrato(client: TestClient, consulta_headers):
     response = client.post(
         "/api/v1/contratos/",

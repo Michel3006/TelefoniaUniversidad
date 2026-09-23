@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { UseQueryResult } from "@tanstack/react-query";
 import { DataTable } from "../../components/ui/DataTable";
 import { SlideOver } from "../../components/ui/SlideOver";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextAreaField, TextField } from "../../components/ui/Field";
+import { SelectBuscador, type ResultadoBusqueda } from "../../components/ui/SelectBuscador";
 import { EmptyState, ErrorState } from "../../components/ui/EmptyState";
 import { useToast } from "../../components/ui/Toast";
 import { ApiError, api } from "../../lib/api";
 import { useFormulario } from "../../lib/useFormulario";
 import { toPayload, type ReglaCampo } from "../../lib/validation";
-import { useAsignacionesActivas, useCrudMutations, useDispositivos, useExtensiones, usePersonas, useSims, useTelefonos } from "../../lib/queries";
+import { useAsignacionesActivas, useBuscarPersonas, useCrudMutations, useDispositivos, useExtensiones, usePersonas, useSims, useTelefonos } from "../../lib/queries";
 import type { Asignacion } from "../../lib/types";
 import { formatFecha } from "../../lib/formatters";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,6 +67,14 @@ export function AsignacionesPage() {
     }
     if (tipo === "extension") return extensiones.data?.find((e) => e.id === id)?.numero ?? `#${id}`;
     return `#${id}`;
+  };
+
+  const useBuscarPersonasResultado = (q: string): UseQueryResult<ResultadoBusqueda[], Error> => {
+    const res = useBuscarPersonas(q);
+    return {
+      ...res,
+      data: (res.data ?? []).map((p) => ({ id: p.id, label: `${p.nombre} ${p.apellido}`.trim() })),
+    } as UseQueryResult<ResultadoBusqueda[], Error>;
   };
 
   const items = useMemo(() => activas.data ?? [], [activas.data]);
@@ -157,13 +167,14 @@ export function AsignacionesPage() {
         }
       >
         <div className="space-y-4">
-          <SelectField
+          <SelectBuscador
             label="Persona"
             required
-            options={(personas.data ?? []).map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` }))}
+            options={(personas.data ?? []).map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}`.trim() }))}
+            useBuscar={useBuscarPersonasResultado}
             value={valores.persona_id}
             error={errores.persona_id}
-            onChange={(e) => setValor("persona_id", e.target.value)}
+            onChange={(v) => setValor("persona_id", v)}
           />
           <SelectField
             label="Tipo de recurso"
@@ -173,13 +184,13 @@ export function AsignacionesPage() {
             error={errores.tipo_recurso}
             onChange={(e) => { setValor("tipo_recurso", e.target.value); setValor("recurso_id", ""); }}
           />
-          <SelectField
+          <SelectBuscador
             label="Recurso"
             required
             options={opcionesRecurso}
             value={valores.recurso_id}
             error={errores.recurso_id}
-            onChange={(e) => setValor("recurso_id", e.target.value)}
+            onChange={(v) => setValor("recurso_id", v)}
           />
           <TextField
             label="Fecha de inicio"
