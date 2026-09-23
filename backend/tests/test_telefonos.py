@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi.testclient import TestClient
 
 
@@ -86,6 +88,34 @@ def test_detalle_telefono(client: TestClient, auth_headers):
 def test_detalle_telefono_not_found(client: TestClient, auth_headers):
     response = client.get("/api/v1/telefonos/99999/detalle", headers=auth_headers)
     assert response.status_code == 404
+
+
+def test_detalle_telefono_incluye_responsable(
+    client: TestClient, auth_headers, crear_persona
+):
+    create = client.post(
+        "/api/v1/telefonos/",
+        headers=auth_headers,
+        json={"numero": "7777777777"},
+    )
+    telefono_id = create.json()["id"]
+    persona_id = crear_persona()
+    client.post(
+        "/api/v1/asignaciones/",
+        headers=auth_headers,
+        json={
+            "persona_id": persona_id,
+            "tipo_recurso": "telefono",
+            "recurso_id": telefono_id,
+            "fecha_inicio": date.today().isoformat(),
+        },
+    )
+    response = client.get(
+        f"/api/v1/telefonos/{telefono_id}/detalle", headers=auth_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["responsable"] == "Juan Perez"
 
 
 def test_get_telefono_not_found(client: TestClient, auth_headers):

@@ -44,29 +44,29 @@ def test_historial_filtro_por_entidad(client: TestClient, auth_headers):
 
 
 def test_historial_filtro_por_entidad_id(client: TestClient, auth_headers):
-    plan = client.post("/api/v1/planes/", headers=auth_headers, json={"nombre": "Historial"})
-    plan_id = plan.json()["id"]
+    contrato = client.post("/api/v1/contratos/", headers=auth_headers, json={"numero": "H-001"})
+    contrato_id = contrato.json()["id"]
     response = client.get(
         "/api/v1/historial/",
         headers=auth_headers,
-        params={"entidad": "planes", "entidad_id": plan_id},
+        params={"entidad": "contratos", "entidad_id": contrato_id},
     )
     assert response.status_code == 200
     assert len(response.json()) == 1
 
 
 def test_historial_registra_actualizacion(client: TestClient, auth_headers):
-    plan = client.post("/api/v1/planes/", headers=auth_headers, json={"nombre": "Plan Hist"})
-    plan_id = plan.json()["id"]
+    contrato = client.post("/api/v1/contratos/", headers=auth_headers, json={"numero": "H-002"})
+    contrato_id = contrato.json()["id"]
     client.put(
-        f"/api/v1/planes/{plan_id}",
+        f"/api/v1/contratos/{contrato_id}",
         headers=auth_headers,
-        json={"nombre": "Plan Hist", "descripcion": "Nueva descripcion"},
+        json={"numero": "H-002", "observaciones": "Nueva descripcion"},
     )
     response = client.get(
         "/api/v1/historial/",
         headers=auth_headers,
-        params={"entidad": "planes", "entidad_id": plan_id},
+        params={"entidad": "contratos", "entidad_id": contrato_id},
     )
     data = response.json()
     acciones = {d["accion"] for d in data}
@@ -92,14 +92,14 @@ def test_consulta_no_puede_ver_historial(client: TestClient, consulta_headers):
 
 def test_historial_eliminacion_con_valor_anterior(client: TestClient, auth_headers):
     """M1: al eliminar un registro queda el JSON del valor anterior."""
-    plan = client.post("/api/v1/planes/", headers=auth_headers, json={"nombre": "Plan Del"})
-    plan_id = plan.json()["id"]
-    assert client.delete(f"/api/v1/planes/{plan_id}", headers=auth_headers).status_code == 204
+    contrato = client.post("/api/v1/contratos/", headers=auth_headers, json={"numero": "H-003"})
+    contrato_id = contrato.json()["id"]
+    assert client.delete(f"/api/v1/contratos/{contrato_id}", headers=auth_headers).status_code == 204
 
     data = client.get(
         "/api/v1/historial/",
         headers=auth_headers,
-        params={"entidad": "planes", "entidad_id": plan_id},
+        params={"entidad": "contratos", "entidad_id": contrato_id},
     ).json()
     assert any(h["accion"] == "eliminado" for h in data)
     eliminado = next(h for h in data if h["accion"] == "eliminado")

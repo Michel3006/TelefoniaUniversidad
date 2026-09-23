@@ -12,7 +12,7 @@ import { useFormulario } from "../../lib/useFormulario";
 import { toPayload, type ReglaCampo } from "../../lib/validation";
 import { useContratoDetalle, useContratos, useCrudMutations } from "../../lib/queries";
 import type { Contrato } from "../../lib/types";
-import { diasHasta, formatFecha, formatMoneda } from "../../lib/formatters";
+import { diasHasta, formatFecha } from "../../lib/formatters";
 
 const REGLAS: ReglaCampo[] = [
   { name: "numero", label: "Número", tipo: "text", required: true, max: 50 },
@@ -123,24 +123,6 @@ export function ContratosPage() {
                 <div className="flex justify-between"><dt className="text-neutro">Vencimiento</dt><dd className="dato">{formatFecha(detalle.data.fecha_vencimiento)}</dd></div>
               </dl>
               {detalle.data.observaciones && <p className="mt-2 text-sm text-neutro">{detalle.data.observaciones}</p>}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-tinta">Planes incluidos</p>
-              {detalle.data.planes.length === 0 ? (
-                <p className="mt-2 text-sm text-neutro">Este contrato no tiene planes asociados.</p>
-              ) : (
-                <ul className="mt-2 divide-y divide-filete border border-filete">
-                  {detalle.data.planes.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                      <div>
-                        <p className="text-tinta">{p.nombre}</p>
-                        <p className="text-neutro">{p.operador ?? "—"}</p>
-                      </div>
-                      <span className="dato">{formatMoneda(p.coste_mensual)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
           </div>
         )}

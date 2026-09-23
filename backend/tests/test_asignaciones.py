@@ -1,15 +1,6 @@
-from datetime import date, timedelta
+﻿from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
-
-
-def _create_persona(client: TestClient, auth_headers) -> int:
-    response = client.post(
-        "/api/v1/personas/",
-        headers=auth_headers,
-        json={"nombre": "Juan", "apellido": "Perez"},
-    )
-    return response.json()["id"]
 
 
 def _create_sim(client: TestClient, auth_headers) -> int:
@@ -21,8 +12,8 @@ def _create_sim(client: TestClient, auth_headers) -> int:
     return response.json()["id"]
 
 
-def test_create_asignacion(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_create_asignacion(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     response = client.post(
         "/api/v1/asignaciones/",
@@ -41,8 +32,8 @@ def test_create_asignacion(client: TestClient, auth_headers):
     assert data["fecha_fin"] is None
 
 
-def test_list_asignaciones(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_list_asignaciones(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     client.post(
         "/api/v1/asignaciones/",
@@ -60,8 +51,8 @@ def test_list_asignaciones(client: TestClient, auth_headers):
     assert len(data) >= 1
 
 
-def test_asignaciones_activas(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_asignaciones_activas(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     client.post(
         "/api/v1/asignaciones/",
@@ -79,8 +70,8 @@ def test_asignaciones_activas(client: TestClient, auth_headers):
     assert len(data) >= 1
 
 
-def test_finalizar_asignacion(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_finalizar_asignacion(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     create = client.post(
         "/api/v1/asignaciones/",
@@ -106,8 +97,8 @@ def test_finalizar_asignacion(client: TestClient, auth_headers):
     assert "desasignado" in acciones
 
 
-def test_finalizar_asignacion_ya_finalizada(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_finalizar_asignacion_ya_finalizada(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     create = client.post(
         "/api/v1/asignaciones/",
@@ -131,8 +122,8 @@ def test_finalizar_asignacion_ya_finalizada(client: TestClient, auth_headers):
     assert response.status_code == 400
 
 
-def test_por_persona(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_por_persona(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     client.post(
         "/api/v1/asignaciones/",
@@ -152,8 +143,8 @@ def test_por_persona(client: TestClient, auth_headers):
     assert len(data) >= 1
 
 
-def test_por_recurso(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_por_recurso(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     client.post(
         "/api/v1/asignaciones/",
@@ -183,9 +174,9 @@ def test_finalizar_not_found(client: TestClient, auth_headers):
     assert response.status_code == 404
 
 
-def test_no_permite_doble_asignacion_activa(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
-    otra_persona_id = _create_persona(client, auth_headers)
+def test_no_permite_doble_asignacion_activa(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
+    otra_persona_id = crear_persona()
     sim_id = _create_sim(client, auth_headers)
     client.post(
         "/api/v1/asignaciones/",
@@ -210,8 +201,8 @@ def test_no_permite_doble_asignacion_activa(client: TestClient, auth_headers):
     assert response.status_code == 409
 
 
-def test_tipo_recurso_invalido(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_tipo_recurso_invalido(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     response = client.post(
         "/api/v1/asignaciones/",
         headers=auth_headers,
@@ -225,8 +216,8 @@ def test_tipo_recurso_invalido(client: TestClient, auth_headers):
     assert response.status_code == 400
 
 
-def test_recurso_inexistente(client: TestClient, auth_headers):
-    persona_id = _create_persona(client, auth_headers)
+def test_recurso_inexistente(client: TestClient, auth_headers, crear_persona):
+    persona_id = crear_persona()
     response = client.post(
         "/api/v1/asignaciones/",
         headers=auth_headers,

@@ -9,11 +9,9 @@ class Telefono(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     numero: Mapped[str] = mapped_column(String(30), unique=True, index=True)
-    local_id: Mapped[int | None] = mapped_column(ForeignKey("locales.id"))
     estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
     observaciones: Mapped[str | None] = mapped_column(Text)
 
-    local: Mapped["Local | None"] = relationship()
     estado: Mapped["Estado | None"] = relationship()
     extensiones: Mapped[list["Extension"]] = relationship(back_populates="telefono")
 
@@ -43,10 +41,8 @@ class Sim(Base):
     iccid: Mapped[str | None] = mapped_column(String(30), unique=True)
     imsi: Mapped[str | None] = mapped_column(String(30))
     operador: Mapped[str] = mapped_column(String(100), default="ETECSA")
-    plan_id: Mapped[int | None] = mapped_column(ForeignKey("planes.id"))
     estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
 
-    plan: Mapped["Plan | None"] = relationship(back_populates="sims")
     estado: Mapped["Estado | None"] = relationship()
     dispositivos: Mapped[list["Dispositivo"]] = relationship(back_populates="sim")
     consumos: Mapped[list["Consumo"]] = relationship(back_populates="sim")
@@ -60,10 +56,8 @@ class Dispositivo(Base):
     modelo: Mapped[str] = mapped_column(String(100))
     imei: Mapped[str] = mapped_column(String(30), unique=True)
     sim_id: Mapped[int | None] = mapped_column(ForeignKey("sims.id"))
-    local_id: Mapped[int | None] = mapped_column(ForeignKey("locales.id"))
     estado_id: Mapped[int | None] = mapped_column(ForeignKey("estados.id"))
     observaciones: Mapped[str | None] = mapped_column(Text)
 
     sim: Mapped[Sim | None] = relationship(back_populates="dispositivos")
-    local: Mapped["Local | None"] = relationship()
     estado: Mapped["Estado | None"] = relationship()

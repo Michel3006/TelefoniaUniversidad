@@ -11,13 +11,12 @@ import { useToast } from "../../components/ui/Toast";
 import { ApiError } from "../../lib/api";
 import { useFormulario } from "../../lib/useFormulario";
 import { toPayload, type ReglaCampo } from "../../lib/validation";
-import { useCrudMutations, useBuscarTelefonos, useEstados, useLocales, useTelefonoDetalle, useTelefonos } from "../../lib/queries";
+import { useCrudMutations, useBuscarTelefonos, useEstados, useTelefonoDetalle, useTelefonos } from "../../lib/queries";
 import type { Telefono } from "../../lib/types";
 import { BuscadorRecurso } from "../../components/ui/BuscadorRecurso";
 
 const REGLAS: ReglaCampo[] = [
   { name: "numero", label: "Número", tipo: "telefono", required: true, max: 30 },
-  { name: "local_id", label: "Local", tipo: "select" },
   { name: "estado_id", label: "Estado", tipo: "select" },
   { name: "observaciones", label: "Observaciones", tipo: "textarea", max: 500 },
 ];
@@ -25,7 +24,6 @@ const REGLAS: ReglaCampo[] = [
 export function TelefonosPage() {
   const telefonos = useTelefonos();
   const estados = useEstados();
-  const locales = useLocales();
   const { crear, actualizar, eliminar } = useCrudMutations<Telefono>("telefonos", "/telefonos");
   const { mostrar } = useToast();
   const { valores, errores, setValor, setValoresDesde, validarTodos, validarUno } = useFormulario(REGLAS);
@@ -37,18 +35,13 @@ export function TelefonosPage() {
   const detalle = useTelefonoDetalle(verId);
 
   const nombreEstado = (id: number | null) => estados.data?.find((e) => e.id === id)?.nombre ?? null;
-  const nombreLocal = (id: number | null) => {
-    const l = locales.data?.find((x) => x.id === id);
-    return l ? [l.piso, l.oficina].filter(Boolean).join(" · ") || `Local ${l.id}` : "—";
-  };
 
   const columnas: ColumnDef<Telefono, any>[] = useMemo(
     () => [
       { header: "Número", accessorKey: "numero", cell: (c) => <span className="dato">{c.getValue()}</span> },
-      { header: "Local", accessorKey: "local_id", cell: (c) => nombreLocal(c.getValue()) },
       { header: "Estado", accessorKey: "estado_id", cell: (c) => <StatusPill estado={nombreEstado(c.getValue())} /> },
     ],
-    [estados.data, locales.data]
+    [estados.data]
   );
 
   function abrirCrear() {
@@ -118,11 +111,10 @@ export function TelefonosPage() {
         {detalle.data && (
           <div className="space-y-5">
             <div>
-              <p className="text-sm font-medium text-tinta">Ubicación</p>
+              <p className="text-sm font-medium text-tinta">Información</p>
               <dl className="mt-2 space-y-1 text-sm">
-                <div className="flex justify-between"><dt className="text-neutro">Edificio</dt><dd>{detalle.data.edificio ?? "—"}</dd></div>
-                <div className="flex justify-between"><dt className="text-neutro">Local</dt><dd>{detalle.data.local ?? "—"}</dd></div>
                 <div className="flex justify-between"><dt className="text-neutro">Estado</dt><dd><StatusPill estado={detalle.data.estado} /></dd></div>
+                <div className="flex justify-between"><dt className="text-neutro">Responsable</dt><dd>{detalle.data.responsable ?? "Sin asignar"}</dd></div>
               </dl>
               {detalle.data.observaciones && <p className="mt-2 text-sm text-neutro">{detalle.data.observaciones}</p>}
             </div>
@@ -164,13 +156,6 @@ export function TelefonosPage() {
       >
         <div className="space-y-4">
           <TextField label="Número" required dato inputMode="tel" maxLength={30} value={valores.numero ?? ""} error={errores.numero} onChange={(e) => setValor("numero", e.target.value)} onBlur={() => validarUno("numero")} />
-          <SelectField
-            label="Local"
-            options={(locales.data ?? []).map((l) => ({ value: l.id, label: [l.piso, l.oficina].filter(Boolean).join(" · ") || `Local ${l.id}` }))}
-            value={valores.local_id ?? ""}
-            error={errores.local_id}
-            onChange={(e) => setValor("local_id", e.target.value)}
-          />
           <SelectField label="Estado" options={(estados.data ?? []).map((e) => ({ value: e.id, label: e.nombre }))} value={valores.estado_id ?? ""} error={errores.estado_id} onChange={(e) => setValor("estado_id", e.target.value)} />
           <TextAreaField label="Observaciones" maxLength={500} value={valores.observaciones ?? ""} error={errores.observaciones} onChange={(e) => setValor("observaciones", e.target.value)} onBlur={() => validarUno("observaciones")} />
         </div>

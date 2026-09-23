@@ -25,23 +25,3 @@ class Departamento(Base):
     padre: Mapped["Departamento | None"] = relationship(remote_side=[id], back_populates="hijos")
     hijos: Mapped[list["Departamento"]] = relationship(back_populates="padre")
     area: Mapped[Area | None] = relationship()
-
-
-class Edificio(Base):
-    __tablename__ = "edificios"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(150), index=True)
-    direccion: Mapped[str | None] = mapped_column(String(250))
-
-
-class Local(Base):
-    __tablename__ = "locales"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    edificio_id: Mapped[int] = mapped_column(ForeignKey("edificios.id"))
-    piso: Mapped[str | None] = mapped_column(String(50))
-    oficina: Mapped[str | None] = mapped_column(String(50))
-    descripcion: Mapped[str | None] = mapped_column(String(250))
-
-    edificio: Mapped[Edificio] = relationship()

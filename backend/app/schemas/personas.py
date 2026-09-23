@@ -15,6 +15,9 @@ class PersonaBase(BaseModel):
     id_ccosto: str | None = None
     cargo_id: int | None = None
     area_id: int | None = None
+    cubiculo: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
     baja: bool = False
 
 
@@ -45,4 +48,7 @@ class PersonaReadBasico(BaseModel):
     id_ccosto: str | None = None
     cargo_id: int | None = None
     area_id: int | None = None
+    cubiculo: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
     baja: bool = False

@@ -63,23 +63,6 @@ class Consumo(Base):
     sim: Mapped["Sim | None"] = relationship(back_populates="consumos")
 
 
-class LimiteConsumo(Base):
-    """Limite de consumo (importe) autorizado para una SIM. Historico por
-    vigencia: al cambiar el limite se cierra vigente_hasta y se crea uno
-    nuevo, no se sobrescribe."""
-
-    __tablename__ = "limites_consumo"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    sim_id: Mapped[int] = mapped_column(ForeignKey("sims.id"), index=True)
-    valor_limite: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    vigente_desde: Mapped[date] = mapped_column(Date)
-    vigente_hasta: Mapped[date | None] = mapped_column(Date)
-    observaciones: Mapped[str | None] = mapped_column(Text)
-
-    sim: Mapped["Sim"] = relationship()
-
-
 class AutorizacionExceso(Base):
     """Excepcion que permite a una persona/SIM superar el limite normal
     durante un periodo determinado."""

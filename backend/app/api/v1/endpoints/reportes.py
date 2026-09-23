@@ -5,11 +5,8 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.asignaciones import Asignacion
 from app.models.consumo import Consumo, FacturaEtecsa
-from app.models.costes import Coste
 from app.models.telefonia import Dispositivo, Extension, Sim, Telefono
-from app.models.organizacion import Edificio, Local
 from app.models.personas import Persona
-from app.services import costes as servicio_costes
 
 router = APIRouter(prefix="/reportes", tags=["reportes"])
 
@@ -23,28 +20,8 @@ def inventario(db: Session = Depends(get_db)):
         "telefonos_fijos": contar(Telefono),
         "sims": contar(Sim),
         "dispositivos": contar(Dispositivo),
-        "edificios": contar(Edificio),
-        "locales": contar(Local),
         "personas": contar(Persona),
     }
-
-
-@router.get("/costes-totales")
-def costes_totales(db: Session = Depends(get_db)):
-    return {
-        "importe_total": db.scalar(select(func.sum(Coste.importe))),
-        "periodos": db.scalar(select(func.count(func.distinct(Coste.periodo)))),
-    }
-
-
-@router.get("/costes-por-departamento")
-def costes_por_departamento(db: Session = Depends(get_db)):
-    return servicio_costes.resumen_por_departamento(db)
-
-
-@router.get("/costes-por-periodo")
-def costes_por_periodo(db: Session = Depends(get_db)):
-    return servicio_costes.resumen_por_periodo(db)
 
 
 @router.get("/recursos-por-departamento")

@@ -51,31 +51,12 @@ class ImportacionResumen(BaseModel):
     periodo: str
     procesados: int
     asociados: int
+    sims_creadas: int = 0
     no_asociados: int
     excesos: int
+    alarmas: int = 0
     numeros_no_asociados: list[str] = []
-
-
-class LimiteConsumoBase(BaseModel):
-    sim_id: int
-    valor_limite: Decimal
-    vigente_desde: date
-    vigente_hasta: date | None = None
-    observaciones: str | None = None
-
-
-class LimiteConsumoCreate(LimiteConsumoBase):
-    pass
-
-
-class LimiteConsumoUpdate(LimiteConsumoBase):
-    pass
-
-
-class LimiteConsumoRead(LimiteConsumoBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
+    numeros_sims_creadas: list[str] = []
 
 
 class AutorizacionExcesoBase(BaseModel):

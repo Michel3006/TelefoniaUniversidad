@@ -52,6 +52,9 @@ class SincronizacionEmpleado(BaseModel):
     id_ccosto: str | None = None
     id_cargo: str | None = None
     id_direccion: str | None = None
+    cubiculo: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
     nivel: int | None = None
     baja: bool = False
 

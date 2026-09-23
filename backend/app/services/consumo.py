@@ -1,11 +1,14 @@
-"""Importacion de facturas mensuales de ETECSA (PDF) y deteccion de excesos
-de consumo.
+"""Importacion de facturas mensuales de ETECSA (PDF).
 
-El parser NO depende de posiciones fijas de pagina: trabaja sobre el texto
-extraido y usa expresiones regulares tolerantes a que filas consecutivas
-queden pegadas sin espacio (algo habitual al extraer texto de PDFs
-tabulares). Un numero de servicio que no coincide con ninguna Sim
-registrada NO se descarta: se guarda con sim_id=None para revision manual.
+Punto 7 del PLAN_CAMBIOS: el PDF es la fuente de verdad de cuota,
+consumo (excedente) e importe. No existen modulos de Costos/Planes/
+Limites: la cuota reemplaza al plan/limite manual.
+
+Reglas:
+- Servicio = numero de SIM (se crea si es movil inexistente).
+- Cuota = lo que le toca a la SIM (asociada a la SIM, solo lectura).
+- Consumo = excedente; si es > 0 y no hay autorizacion vigente => ALARMA.
+- Importe = total a pagar, tomado directamente del PDF (no calculado).
 """
 import re
 from datetime import date, datetime
@@ -14,7 +17,8 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.consumo import AutorizacionExceso, Consumo, FacturaEtecsa, LimiteConsumo
+from app.models.consumo import AutorizacionExceso, Consumo, FacturaEtecsa
+from app.models.historial import Historial
 from app.models.telefonia import Sim
 
 _AMOUNT = r"[\d,]{1,12}\.\d{2}"
@@ -26,6 +30,13 @@ _FILA_RE = re.compile(
     rf"(?P<impuesto>{_AMOUNT})\s*"
     rf"(?P<importe>{_AMOUNT})"
 )
+
+_PREFIJOS_SIM = ("5", "6")
+
+
+def _es_numero_sim(numero: str) -> bool:
+    return len(numero) == 8 and numero.startswith(_PREFIJOS_SIM)
+
 
 _MAX_PAGINAS = 100
 _MAX_TEXTO_CARACTERES = 5_000_000
@@ -40,7 +51,6 @@ def _decimal(texto: str) -> Decimal:
 
 
 def _fecha_corta(texto: str | None) -> date | None:
-    """Convierte DD/MM/YY -> date. ETECSA usa años de 2 digitos (26 -> 2026)."""
     if not texto:
         return None
     try:
@@ -67,10 +77,6 @@ class TotalesIncoherentesError(Exception):
 
 
 def parsear_factura(texto: str) -> dict:
-    """Extrae cabecera + filas de servicio de un texto de factura ETECSA.
-    Lanza FacturaMalFormadaError si faltan campos minimos indispensables
-    (no_factura, periodo)."""
-
     no_factura = _campo(r"[Nn]o\.?\s*[Ff]actura:?\s*(\S+)", texto)
     if not no_factura:
         raise FacturaMalFormadaError("No se pudo identificar el numero de factura en el PDF")
@@ -176,8 +182,6 @@ def extraer_texto_pdf(contenido: bytes) -> str:
 
 
 def _verificar_totales(datos: dict) -> None:
-    """Verifica que la fila Total de la factura coincida con la suma de sus
-    servicios (tolerancia de centimos). Lanza TotalesIncoherentesError."""
     if datos["cuota_total"] is None:
         return
     comprobaciones = (
@@ -199,7 +203,6 @@ def _verificar_totales(datos: dict) -> None:
 
 
 def _rango_mes(periodo: str) -> tuple[date, date]:
-    """Devuelve (primer_dia, ultimo_dia) del periodo 'YYYY-MM'."""
     import calendar
 
     anio, mes = (int(p) for p in periodo.split("-"))
@@ -207,48 +210,24 @@ def _rango_mes(periodo: str) -> tuple[date, date]:
     return date(anio, mes, 1), date(anio, mes, ultimo)
 
 
-def evaluacion_limite(db: Session, sim_id: int, periodo: str) -> tuple[Decimal | None, Decimal | None, bool]:
-    """Evalua los limites que aplican a una SIM en un periodo dado.
-
-    La autorizacion especial vigente tiene prioridad sobre el limite normal:
-    devuelve (limite_normal, limite_efectivo, con_autorizacion). Cuando hay
-    autorizacion, el limite_efectivo es el limite_autorizado. Un limite o
-    autorizacion aplica si su vigencia se SOLAPA con el mes del periodo: se
-    toma el de vigente_desde mas reciente (normal) y el de mayor
-    limite_autorizado (autorizacion)."""
+def tiene_autorizacion(db: Session, sim_id: int, periodo: str) -> bool:
+    """True si hay autorizacion de exceso vigente para la SIM en el periodo."""
     inicio, fin = _rango_mes(periodo)
-
-    autorizacion = db.scalar(
-        select(AutorizacionExceso)
+    existe = db.scalar(
+        select(AutorizacionExceso.id)
         .where(
             AutorizacionExceso.sim_id == sim_id,
             AutorizacionExceso.fecha_inicio <= fin,
             (AutorizacionExceso.fecha_fin.is_(None)) | (AutorizacionExceso.fecha_fin >= inicio),
         )
-        .order_by(AutorizacionExceso.limite_autorizado.desc())
         .limit(1)
     )
-    limite_normal = _limite_normal(db, sim_id, inicio, fin)
-    if autorizacion is not None:
-        return limite_normal, autorizacion.limite_autorizado, True
-    return limite_normal, limite_normal, False
+    return existe is not None
 
 
-def _limite_normal(db: Session, sim_id: int, inicio: date, fin: date) -> Decimal | None:
-    limite = db.scalar(
-        select(LimiteConsumo)
-        .where(
-            LimiteConsumo.sim_id == sim_id,
-            LimiteConsumo.vigente_desde <= fin,
-            (LimiteConsumo.vigente_hasta.is_(None)) | (LimiteConsumo.vigente_hasta >= inicio),
-        )
-        .order_by(LimiteConsumo.vigente_desde.desc())
-        .limit(1)
-    )
-    return limite.valor_limite if limite is not None else None
-
-
-def importar_factura(db: Session, contenido: bytes, nombre_archivo: str) -> dict:
+def importar_factura(
+    db: Session, contenido: bytes, nombre_archivo: str, usuario_id: int | None = None
+) -> dict:
     texto = extraer_texto_pdf(contenido)
     datos = parsear_factura(texto)
     _verificar_totales(datos)
@@ -281,17 +260,31 @@ def importar_factura(db: Session, contenido: bytes, nombre_archivo: str) -> dict
 
     asociados = 0
     no_asociados: list[str] = []
+    sims_creadas: list[str] = []
     excesos = 0
+    alarmas = 0
 
     for fila in datos["filas"]:
         sim = db.scalar(select(Sim).where(Sim.numero == fila["numero"]))
-        limite_normal = limite_efectivo = None
+        if sim is None and _es_numero_sim(fila["numero"]):
+            sim = Sim(numero=fila["numero"])
+            db.add(sim)
+            db.flush()
+            sims_creadas.append(fila["numero"])
+
         con_autorizacion = False
         if sim:
-            limite_normal, limite_efectivo, con_autorizacion = evaluacion_limite(
-                db, sim.id, datos["periodo"]
-            )
-        en_exceso = bool(sim and limite_efectivo is not None and fila["consumo"] > limite_efectivo)
+            con_autorizacion = tiene_autorizacion(db, sim.id, datos["periodo"])
+
+        # Punto 7: excedente = consumo > 0 (la cuota del PDF es el limite).
+        excedente = fila["consumo"] > 0
+        # Alarma solo si hay excedente Y no esta autorizado.
+        alarma = bool(sim and excedente and not con_autorizacion)
+        en_exceso = bool(excedente and (sim is None or not con_autorizacion))
+
+        # El limite "normal" es la cuota del PDF (solo informativo, no manual).
+        limite_normal = fila["cuota"]
+        limite_efectivo = fila["cuota"]
 
         db.add(
             Consumo(
@@ -309,6 +302,23 @@ def importar_factura(db: Session, contenido: bytes, nombre_archivo: str) -> dict
                 limite_efectivo=limite_efectivo,
             )
         )
+
+        if alarma:
+            alarmas += 1
+            db.add(
+                Historial(
+                    entidad="alarma_excedente",
+                    entidad_id=sim.id if sim else None,
+                    accion="alarma",
+                    valor_nuevo=(
+                        f"numero={fila['numero']} periodo={datos['periodo']} "
+                        f"cuota={fila['cuota']} consumo={fila['consumo']} "
+                        f"importe={fila['importe']} sin_autorizacion"
+                    ),
+                    usuario_id=usuario_id,
+                )
+            )
+
         if sim:
             asociados += 1
         else:
@@ -324,7 +334,10 @@ def importar_factura(db: Session, contenido: bytes, nombre_archivo: str) -> dict
         "periodo": datos["periodo"],
         "procesados": len(datos["filas"]),
         "asociados": asociados,
+        "sims_creadas": len(sims_creadas),
         "no_asociados": len(no_asociados),
         "excesos": excesos,
+        "alarmas": alarmas,
         "numeros_no_asociados": no_asociados,
+        "numeros_sims_creadas": sims_creadas,
     }

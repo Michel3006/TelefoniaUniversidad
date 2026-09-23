@@ -46,15 +46,26 @@ def test_importar_pdf_real_etecsa(client: TestClient, auth_headers):
     assert data["no_factura"] == "41012682713947"
     assert data["periodo"] == "2026-07"
     assert data["procesados"] == 207
-    assert data["asociados"] == 0
-    assert data["no_asociados"] == 207
-    assert data["excesos"] == 0
+    assert data["asociados"] == data["sims_creadas"]
+    assert data["asociados"] + data["no_asociados"] == 207
+    # Punto 7: consumo > 0 sin autorizacion => excedente/alarma.
+    assert data["excesos"] > 0
+    assert data["alarmas"] == data["excesos"]
 
     consumos = client.get(
         "/api/v1/consumo/", headers=auth_headers, params={"limit": 500}
     ).json()
     assert len(consumos) == 207
-    assert all(c["en_exceso"] is False for c in consumos)
+    excesos = [c for c in consumos if c["en_exceso"] is True]
+    assert len(excesos) == data["excesos"]
+    assert all(c["con_autorizacion"] is False for c in excesos)
+
+    sims = client.get("/api/v1/sims/", headers=auth_headers, params={"limit": 500}).json()
+    assert len(sims) == data["sims_creadas"]
+    for numero in data["numeros_sims_creadas"]:
+        assert any(s["numero"] == numero for s in sims)
+    for numero in data["numeros_no_asociados"]:
+        assert all(s["numero"] != numero for s in sims)
 
     facturas = client.get("/api/v1/facturas-etecsa/", headers=auth_headers).json()
     assert len(facturas) == 1

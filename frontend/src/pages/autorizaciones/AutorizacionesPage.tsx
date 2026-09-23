@@ -1,12 +1,22 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { UseQueryResult } from "@tanstack/react-query";
 import { CrudPage } from "../../components/crud/CrudPage";
-import { useAutorizaciones, usePersonas, useSims } from "../../lib/queries";
+import type { ResultadoBusqueda } from "../../components/ui/SelectBuscador";
+import { useAutorizaciones, useBuscarPersonas, usePersonas, useSims } from "../../lib/queries";
 import type { AutorizacionExceso } from "../../lib/types";
 import { formatFecha, formatMoneda } from "../../lib/formatters";
 
 export function AutorizacionesPage() {
   const sims = useSims();
   const personas = usePersonas();
+
+  const useBuscarPersonasResultado = (q: string): UseQueryResult<ResultadoBusqueda[], Error> => {
+    const res = useBuscarPersonas(q);
+    return {
+      ...res,
+      data: (res.data ?? []).map((p) => ({ id: p.id, label: `${p.nombre} ${p.apellido}`.trim() })),
+    } as UseQueryResult<ResultadoBusqueda[], Error>;
+  };
 
   const nombreSim = (id: number) => {
     const s = sims.data?.find((x) => x.id === id);
@@ -51,6 +61,7 @@ export function AutorizacionesPage() {
           type: "select",
           required: true,
           options: (personas.data ?? []).map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}`.trim() })),
+          useBuscar: useBuscarPersonasResultado,
         },
         { name: "limite_autorizado", label: "Límite autorizado (CUP)", type: "decimal", required: true, max: 15 },
         { name: "fecha_inicio", label: "Desde", type: "date", required: true },

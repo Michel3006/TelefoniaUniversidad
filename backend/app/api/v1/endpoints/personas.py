@@ -1,13 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.utils import like_seguro
-from app.core.security import get_current_user, require_role
+from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models.historial import Historial
 from app.models.personas import Persona
-from app.schemas.personas import PersonaCreate, PersonaRead, PersonaUpdate
 
 router = APIRouter(prefix="/personas", tags=["personas"])
 
@@ -80,82 +78,3 @@ def get_persona(
 ):
     rol = _rol_usuario(user)
     return _serializar(_obtener_o_404(db, persona_id), rol)
-
-
-@router.post(
-    "/",
-    response_model=PersonaRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role("admin", "gestor"))],
-)
-def create_persona(payload: PersonaCreate, request: Request, db: Session = Depends(get_db)):
-    persona = Persona(**payload.model_dump())
-    db.add(persona)
-    db.flush()
-    db.add(
-        Historial(
-            entidad="personas",
-            entidad_id=persona.id,
-            accion="creado",
-            usuario_id=_user_id(request),
-        )
-    )
-    db.commit()
-    db.refresh(persona)
-    return persona
-
-
-@router.put(
-    "/{persona_id}",
-    response_model=PersonaRead,
-    dependencies=[Depends(require_role("admin", "gestor"))],
-)
-def update_persona(
-    persona_id: int,
-    payload: PersonaUpdate,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    persona = _obtener_o_404(db, persona_id)
-    for campo, valor in payload.model_dump(exclude_unset=True).items():
-        anterior = getattr(persona, campo)
-        setattr(persona, campo, valor)
-        if anterior != valor:
-            db.add(
-                Historial(
-                    entidad="personas",
-                    entidad_id=persona_id,
-                    accion="actualizado",
-                    campo=campo,
-                    valor_anterior=str(anterior) if anterior is not None else None,
-                    valor_nuevo=str(valor) if valor is not None else None,
-                    usuario_id=_user_id(request),
-                )
-            )
-    db.commit()
-    db.refresh(persona)
-    return persona
-
-
-@router.delete(
-    "/{persona_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_role("admin", "gestor"))],
-)
-def delete_persona(persona_id: int, request: Request, db: Session = Depends(get_db)):
-    persona = _obtener_o_404(db, persona_id)
-    db.delete(persona)
-    db.add(
-        Historial(
-            entidad="personas",
-            entidad_id=persona_id,
-            accion="eliminado",
-            usuario_id=_user_id(request),
-        )
-    )
-    db.commit()
-
-
-def _user_id(request: Request) -> int | None:
-    user = getattr(request.state, "user", None)
-    return user.id if user else None

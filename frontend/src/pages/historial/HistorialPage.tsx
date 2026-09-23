@@ -7,18 +7,15 @@ import { formatFechaHora } from "../../lib/formatters";
 const ENTIDADES: { value: string; label: string }[] = [
   { value: "personas", label: "personas" },
   { value: "departamentos", label: "departamentos" },
-  { value: "edificios", label: "edificios" },
-  { value: "locales", label: "locales" },
   { value: "estados", label: "estados" },
   { value: "telefonos", label: "teléfonos" },
   { value: "extensiones", label: "extensiones" },
   { value: "dispositivos", label: "dispositivos" },
   { value: "sims", label: "SIMs" },
-  { value: "planes", label: "planes" },
   { value: "contratos", label: "contratos" },
-  { value: "costes", label: "costos" },
   { value: "asignaciones", label: "asignaciones" },
   { value: "facturas_etecsa", label: "facturas importadas" },
+  { value: "alarma_excedente", label: "alarmas de excedente" },
   { value: "usuarios", label: "usuarios" },
 ];
 
@@ -28,6 +25,7 @@ const ETIQUETA_ACCION: Record<string, string> = {
   eliminado: "Se eliminó",
   desasignado: "Se desasignó",
   importado: "Se importó",
+  alarma: "Alarma",
 };
 
 export function HistorialPage() {

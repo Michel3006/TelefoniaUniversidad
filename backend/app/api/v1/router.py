@@ -8,16 +8,13 @@ from app.api.v1.endpoints import (
     cargos,
     consumo,
     contratos,
-    costes,
     departamentos,
     dispositivos,
     estados,
     extensiones,
+    guias,
     historial,
-    limites,
-    locales,
     personas,
-    planes,
     reportes,
     sims,
     sincronizacion,
@@ -37,20 +34,16 @@ api_router.include_router(departamentos.router, dependencies=_auth)
 api_router.include_router(cargos.router, dependencies=_auth)
 api_router.include_router(areas.router, dependencies=_auth)
 api_router.include_router(sincronizacion.router, dependencies=_auth)
-api_router.include_router(locales.edificios_router, dependencies=_auth)
-api_router.include_router(locales.locales_router, dependencies=_auth)
 api_router.include_router(estados.router, dependencies=_auth)
 api_router.include_router(telefonos.router, dependencies=_auth)
 api_router.include_router(extensiones.router, dependencies=_auth)
 api_router.include_router(sims.router, dependencies=_auth)
 api_router.include_router(dispositivos.router, dependencies=_auth)
-api_router.include_router(planes.router, dependencies=_auth)
 api_router.include_router(contratos.router, dependencies=_auth)
 api_router.include_router(asignaciones.router, dependencies=_auth)
-api_router.include_router(costes.router, dependencies=_auth)
 api_router.include_router(consumo.router, dependencies=_auth)
 api_router.include_router(consumo.facturas_router, dependencies=_auth)
-api_router.include_router(limites.router, dependencies=_auth)
 api_router.include_router(autorizaciones.router, dependencies=_auth)
 api_router.include_router(historial.router, dependencies=_auth)
 api_router.include_router(reportes.router, dependencies=_auth)
+api_router.include_router(guias.router, dependencies=_auth)

@@ -5,7 +5,8 @@ import { DataTable } from "../ui/DataTable";
 import { SlideOver } from "../ui/SlideOver";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Button } from "../ui/Button";
-import { TextField, TextAreaField, SelectField } from "../ui/Field";
+import { TextField, TextAreaField } from "../ui/Field";
+import { SelectBuscador, type ResultadoBusqueda } from "../ui/SelectBuscador";
 import { EmptyState, ErrorState } from "../ui/EmptyState";
 import { useCrudMutations } from "../../lib/queries";
 import { useToast } from "../ui/Toast";
@@ -30,7 +31,12 @@ export type CampoConfig =
       dato?: boolean;
     })
   | (CampoBase & { type: "textarea" })
-  | (CampoBase & { type: "select"; options?: { value: number | string; label: string }[] });
+  | (CampoBase & {
+      type: "select";
+      options?: { value: number | string; label: string }[];
+      useBuscar?: (q: string) => UseQueryResult<ResultadoBusqueda[], Error>;
+      umbral?: number;
+    });
 
 function aReglas(campos: CampoConfig[]): ReglaCampo[] {
   return campos.map((c) => ({
@@ -196,16 +202,20 @@ export function CrudPage<T extends { id: number }>({
         <div className="space-y-4">
           {camposMemo.map((c) =>
             c.type === "select" ? (
-              <SelectField
+              <SelectBuscador
                 key={c.name}
                 label={c.label}
                 options={c.options ?? []}
+                useBuscar={c.useBuscar}
+                umbral={c.umbral}
                 required={c.required}
                 placeholder={c.placeholder}
                 value={valores[c.name] ?? ""}
                 error={errores[c.name]}
-                onChange={(e) => setValor(c.name, e.target.value)}
-                onBlur={() => validarUno(c.name)}
+                onChange={(v) => {
+                  setValor(c.name, v);
+                  validarUno(c.name);
+                }}
               />
             ) : c.type === "textarea" ? (
               <TextAreaField

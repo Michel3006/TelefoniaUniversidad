@@ -62,7 +62,8 @@ def importar_pdf(
             valor_nuevo=(
                 f"factura={resumen['no_factura']} periodo={resumen['periodo']} "
                 f"procesados={resumen['procesados']} asociados={resumen['asociados']} "
-                f"no_asociados={resumen['no_asociados']} excesos={resumen['excesos']}"
+                f"sims_creadas={resumen['sims_creadas']} no_asociados={resumen['no_asociados']} "
+                f"excesos={resumen['excesos']} alarmas={resumen['alarmas']}"
             ),
             usuario_id=usuario.id if usuario else None,
         )
