@@ -9,9 +9,9 @@ const MAPA_COLOR: Record<string, string> = {
   baja: "bg-linea-baja",
   inactivo: "bg-linea-baja",
   inactiva: "bg-linea-baja",
-  pendiente: "bg-senal",
-  "en reparación": "bg-senal",
-  "en reparacion": "bg-senal",
+  pendiente: "bg-aviso",
+  "en reparación": "bg-aviso",
+  "en reparacion": "bg-aviso",
 };
 
 export function StatusPill({ estado }: { estado: string | null | undefined }) {

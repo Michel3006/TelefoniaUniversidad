@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource/archivo": "^5.0.13",
     "@fontsource/ibm-plex-mono": "^5.0.13",
+    "@fontsource/open-sans": "^5.0.13",
     "@tanstack/react-query": "^5.51.0",
     "@tanstack/react-table": "^8.19.0",
     "lucide-react": "^0.427.0",

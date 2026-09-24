@@ -33,12 +33,13 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-tinta px-4">
-      <div className="w-full max-w-sm border border-white/10 bg-papel-alto p-8">
-        <p className="text-sm font-semibold tracking-tight text-tinta">Troncal</p>
-        <p className="mt-1 text-sm text-neutro">Sistema de gestión de telefonía</p>
+    <div className="flex min-h-screen items-center justify-center bg-papel px-4">
+      <div className="w-full max-w-sm border border-filete border-t-4 border-t-senal bg-papel-alto p-8 text-center shadow-lg">
+        <img src="/cujae-logo.png" alt="Escudo de la CUJAE" className="mx-auto mb-3 h-24 w-auto" />
+        <p className="text-lg font-bold tracking-tight text-senal">Sistema de Gestión de Telefonía</p>
+        <p className="mt-1 text-sm text-neutro">Inventario, costos y consumo de servicios telefónicos</p>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4 text-left">
           <TextField
             label="Usuario"
             value={username}
@@ -58,6 +59,17 @@ export function LoginPage() {
             {enviando ? "Ingresando…" : "Ingresar"}
           </Button>
         </form>
+
+        <p className="mt-6 border-t border-filete pt-4 text-[11px] leading-relaxed text-neutro">
+          Universidad Tecnológica de La Habana
+          <br />
+          «José Antonio Echeverría» · CUJAE
+          <br />
+          Calle 114 entre Ciclovía y Rotonda, Marianao
+        </p>
+        <p className="mt-3 text-[11px] italic text-neutro">
+          Dirección de Telecomunicaciones y Redes · «Cada uno cuenta.»
+        </p>
       </div>
     </div>
   );

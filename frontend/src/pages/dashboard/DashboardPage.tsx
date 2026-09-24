@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   useContratos,
   useExtensiones,
@@ -8,13 +9,40 @@ import {
 } from "../../lib/queries";
 import { diasHasta, formatFecha, formatMoneda } from "../../lib/formatters";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { Button } from "../../components/ui/Button";
 
 function Conteo({ valor, etiqueta }: { valor: number | undefined; etiqueta: string }) {
   return (
-    <div className="border-l border-filete px-6 py-2 first:border-l-0 first:pl-0">
-      <p className="dato text-3xl font-bold text-tinta">{valor ?? "—"}</p>
+    <div className="border-l border-filete px-6 py-5 text-center first:border-l-0">
+      <p className="dato text-3xl font-bold text-senal">{valor ?? "—"}</p>
       <p className="mt-1 text-sm text-neutro">{etiqueta}</p>
     </div>
+  );
+}
+
+function Tarjeta({ titulo, accion, children }: { titulo: string; accion?: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col border border-filete border-t-4 border-t-senal bg-papel-alto">
+      <div className="flex items-center justify-between gap-2 border-b border-filete px-4 py-3">
+        <h2 className="text-sm font-bold text-tinta">{titulo}</h2>
+        {accion && <a className="text-xs font-semibold text-senal hover:underline">{accion} →</a>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function DiasPill({ dias }: { dias: number }) {
+  const clase =
+    dias <= 15
+      ? "bg-[#fbefee] text-linea-baja"
+      : dias <= 45
+        ? "bg-[#faf2e3] text-aviso"
+        : "bg-verde-suave text-senal";
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-bold ${clase}`}>
+      {dias} días
+    </span>
   );
 }
 
@@ -44,8 +72,18 @@ export function DashboardPage() {
     .slice(0, 6);
 
   return (
-    <div className="space-y-8">
-      <section className="flex flex-wrap gap-6 border border-filete bg-papel-alto px-6 py-5">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-tinta">Panel de control</h1>
+          <p className="mt-0.5 text-xs text-neutro">
+            Inventario de telefonía · <span className="font-semibold text-senal">Resumen general</span>
+          </p>
+        </div>
+        <Button variant="secundario">Exportar reporte</Button>
+      </div>
+
+      <section className="grid grid-cols-2 border border-filete bg-papel-alto sm:grid-cols-3 lg:grid-cols-5">
         <Conteo valor={inventario.data?.sims} etiqueta="SIMs" />
         <Conteo valor={inventario.data?.telefonos_fijos} etiqueta="teléfonos fijos" />
         <Conteo valor={inventario.data?.dispositivos} etiqueta="dispositivos" />
@@ -53,34 +91,30 @@ export function DashboardPage() {
         <Conteo valor={inventario.data?.personas} etiqueta="personas" />
       </section>
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-tinta">Vencimientos próximos</h2>
-        {vencimientos.length === 0 ? (
-          <EmptyState titulo="No hay contratos por vencer en los próximos 60 días." />
-        ) : (
-          <ul className="divide-y divide-filete border border-filete bg-papel-alto">
-            {vencimientos.map((c) => (
-              <li key={c.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                <div>
-                  <p className="font-medium text-tinta">Contrato {c.numero}</p>
-                  <p className="dato text-neutro">{formatFecha(c.fecha_vencimiento)}</p>
-                </div>
-                <span className={`text-sm font-medium ${(c.dias ?? 0) <= 15 ? "text-linea-baja" : "text-senal"}`}>
-                  {c.dias} días
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <div className="grid gap-6 lg:grid-cols-3">
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-tinta">Consumo del período</h2>
+        <Tarjeta titulo="Vencimientos próximos" accion="Ver todos">
+          {vencimientos.length === 0 ? (
+            <EmptyState titulo="No hay contratos por vencer en los próximos 60 días." />
+          ) : (
+            <ul className="flex-1 divide-y divide-filete">
+              {vencimientos.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <div>
+                    <p className="font-semibold text-tinta">Contrato {c.numero}</p>
+                    <p className="dato text-xs text-neutro">{formatFecha(c.fecha_vencimiento)}</p>
+                  </div>
+                  {c.dias !== null && <DiasPill dias={c.dias} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tarjeta>
+
+        <Tarjeta titulo="Consumo del período" accion="Detalle">
           {!ultimoPeriodo ? (
             <EmptyState titulo="Todavía no se importó ninguna factura de consumo." />
           ) : (
-            <ul className="divide-y divide-filete border border-filete bg-papel-alto">
+            <ul className="flex-1 divide-y divide-filete">
               <li className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-neutro">Período</span>
                 <span className="dato text-tinta">{ultimoPeriodo.periodo}</span>
@@ -91,7 +125,7 @@ export function DashboardPage() {
               </li>
               <li className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-neutro">Consumo total</span>
-                <span className="dato text-tinta">{formatMoneda(ultimoPeriodo.consumo)}</span>
+                <span className="dato font-bold text-senal">{formatMoneda(ultimoPeriodo.consumo)}</span>
               </li>
               <li className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-neutro">Excesos</span>
@@ -107,42 +141,69 @@ export function DashboardPage() {
               </li>
             </ul>
           )}
-        </section>
+        </Tarjeta>
 
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-tinta">Últimas facturas importadas</h2>
-          {(facturas.data ?? []).length === 0 ? (
-            <EmptyState titulo="No hay facturas importadas todavía." />
-          ) : (
-            <ul className="divide-y divide-filete border border-filete bg-papel-alto">
-              {(facturas.data ?? []).slice(0, 5).map((f) => (
-                <li key={f.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                  <div>
-                    <p className="dato font-medium text-tinta">{f.no_factura}</p>
-                    <p className="text-neutro">{formatFecha(f.fecha_vencimiento)}</p>
-                  </div>
-                  <span className="dato text-tinta">{formatMoneda(f.total_a_pagar)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-tinta">Recursos sin asignar</h2>
+        <Tarjeta titulo="Recursos sin asignar" accion="Gestionar">
           {recursosSueltos.length === 0 ? (
             <EmptyState titulo="No hay recursos sin asignar." />
           ) : (
-            <ul className="divide-y divide-filete border border-filete bg-papel-alto">
+            <ul className="flex-1 divide-y divide-filete">
               {recursosSueltos.slice(0, 6).map((r) => (
-                <li key={`${r.tipo}-${r.id}`} className="flex items-center justify-between px-4 py-3 text-sm">
+                <li key={`${r.tipo}-${r.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                   <span className="text-tinta">{r.descripcion}</span>
-                  <span className="dato text-neutro">{r.tipo}</span>
+                  <span className="shrink-0 rounded-full border border-filete bg-papel px-2 py-0.5 text-xs text-neutro">
+                    {r.tipo}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </Tarjeta>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Tarjeta titulo="Últimas facturas importadas">
+          {(facturas.data ?? []).length === 0 ? (
+            <EmptyState titulo="No hay facturas importadas todavía." />
+          ) : (
+            <ul className="flex-1 divide-y divide-filete">
+              {(facturas.data ?? []).slice(0, 6).map((f) => (
+                <li key={f.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <div>
+                    <p className="dato font-semibold text-tinta">{f.no_factura}</p>
+                    <p className="text-xs text-neutro">{formatFecha(f.fecha_vencimiento)}</p>
+                  </div>
+                  <span className="dato font-bold text-tinta">{formatMoneda(f.total_a_pagar)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tarjeta>
+
+        <Tarjeta titulo="Inventario">
+          {!inventario.data ? (
+            <EmptyState titulo="Sin información de inventario." />
+          ) : (
+            <ul className="flex-1 divide-y divide-filete">
+              <li className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-tinta">Personas</span>
+                <span className="dato font-bold text-senal">{inventario.data.personas}</span>
+              </li>
+              <li className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-tinta">Placas SIM</span>
+                <span className="dato font-bold text-senal">{inventario.data.sims}</span>
+              </li>
+              <li className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-tinta">Teléfonos fijos</span>
+                <span className="dato font-bold text-senal">{inventario.data.telefonos_fijos}</span>
+              </li>
+              <li className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-tinta">Dispositivos</span>
+                <span className="dato font-bold text-senal">{inventario.data.dispositivos}</span>
+              </li>
+            </ul>
+          )}
+        </Tarjeta>
       </div>
     </div>
   );

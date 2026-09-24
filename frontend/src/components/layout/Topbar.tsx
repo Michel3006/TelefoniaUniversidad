@@ -1,28 +1,20 @@
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
-import { NAV } from "../../app/nav";
 import { useAuth } from "../../lib/auth-context";
-
-function tituloActual(pathname: string): string {
-  for (const group of NAV) {
-    for (const item of group.items) {
-      if (item.to === pathname || (item.to !== "/" && pathname.startsWith(item.to))) {
-        return item.label;
-      }
-    }
-  }
-  return "Panel";
-}
 
 export function Topbar() {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-filete bg-papel px-5">
-      <h1 className="text-sm font-semibold text-tinta">{tituloActual(location.pathname)}</h1>
+    <header className="flex h-14 items-center gap-6 border-b-2 border-senal bg-papel-alto px-5">
+      <div className="flex min-w-0 shrink-0 items-center gap-2.5">
+        <img src="/cujae-logo.png" alt="CUJAE" className="h-9 w-auto" />
+        <div className="hidden leading-tight md:block">
+          <p className="text-sm font-bold text-senal">Sistema de Gestión de Telefonía</p>
+          <p className="text-[10px] text-neutro">Dirección de Telecomunicaciones y Redes</p>
+        </div>
+      </div>
 
       <div className="hidden max-w-sm flex-1 items-center gap-2 px-8 sm:flex">
         <Search size={16} className="text-neutro" />
@@ -39,7 +31,7 @@ export function Topbar() {
         />
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
+      <div className="ml-auto flex items-center gap-3 text-sm">
         <span className="text-tinta">{user?.username}</span>
         <span className="h-4 w-px bg-filete" aria-hidden />
         <button onClick={logout} className="text-neutro hover:text-tinta hover:underline">
