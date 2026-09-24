@@ -6,6 +6,8 @@ import type {
   Area,
   Asignacion,
   AutorizacionExceso,
+  AuditoriaItem,
+  AuditoriaResumen,
   Cargo,
   Consumo,
   ConsumoPorPeriodo,
@@ -202,6 +204,28 @@ export function useHistorial(entidad?: string, entidadId?: number) {
   return useQuery({
     queryKey: ["historial", entidad ?? null, entidadId ?? null],
     queryFn: () => api<HistorialItem[]>(`/historial/${qs({ entidad, entidad_id: entidadId })}`),
+  });
+}
+
+// --- Auditoría (solo admin) ---
+
+export function useAuditoria(params: {
+  metodo?: string;
+  cargo?: string;
+  estatus?: number;
+  skip?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["auditoria", "list", params],
+    queryFn: () => api<AuditoriaItem[]>(`/auditoria/${qs({ ...params, limit: params.limit ?? 200 })}`),
+  });
+}
+
+export function useAuditoriaResumen() {
+  return useQuery({
+    queryKey: ["auditoria", "resumen"],
+    queryFn: () => api<AuditoriaResumen>("/auditoria/resumen"),
   });
 }
 

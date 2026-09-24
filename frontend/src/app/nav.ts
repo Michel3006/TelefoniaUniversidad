@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  ClipboardList,
   Database,
   FileText,
   Gauge,
@@ -83,6 +84,7 @@ export const NAV: NavGroup[] = [
     titulo: "Administración",
     items: [
       { label: "Usuarios", to: "/usuarios", icon: Users, soloAdmin: true },
+      { label: "Auditoría", to: "/auditoria", icon: ClipboardList, soloAdmin: true },
       { label: "Sincronización RRHH", to: "/sincronizacion", icon: Database, soloAdmin: true },
     ],
   },

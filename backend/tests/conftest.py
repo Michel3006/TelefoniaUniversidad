@@ -12,6 +12,7 @@ os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["LOGIN_RATE_LIMIT_HABILITADO"] = "false"
 
 from app.core.security import create_access_token, hash_password
+from app.core.auditoria import usar_sesion_auditoria
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -32,6 +33,10 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# El middleware de auditoría escribe con su propia sesión; en pruebas debe
+# apuntar a la misma base en memoria que los tests, no a la de desarrollo.
+usar_sesion_auditoria(TestingSessionLocal)
 
 
 def override_get_db() -> Generator[Session, None, None]:

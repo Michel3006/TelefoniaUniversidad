@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from app.api.v1.endpoints import (
     areas,
     asignaciones,
+    auditoria,
     auth,
     autorizaciones,
     cargos,
@@ -45,5 +46,6 @@ api_router.include_router(consumo.router, dependencies=_auth)
 api_router.include_router(consumo.facturas_router, dependencies=_auth)
 api_router.include_router(autorizaciones.router, dependencies=_auth)
 api_router.include_router(historial.router, dependencies=_auth)
+api_router.include_router(auditoria.router, dependencies=_auth)
 api_router.include_router(reportes.router, dependencies=_auth)
 api_router.include_router(guias.router, dependencies=_auth)

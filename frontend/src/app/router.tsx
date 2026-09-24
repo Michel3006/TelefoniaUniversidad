@@ -20,6 +20,7 @@ import { EstadosPage } from "../pages/estados/EstadosPage";
 import { ContratosPage } from "../pages/contratos/ContratosPage";
 import { AsignacionesPage } from "../pages/asignaciones/AsignacionesPage";
 import { UsuariosPage } from "../pages/usuarios/UsuariosPage";
+import { AuditoriaPage } from "../pages/auditoria/AuditoriaPage";
 import { HistorialPage } from "../pages/historial/HistorialPage";
 import { SincronizacionPage } from "../pages/sincronizacion/SincronizacionPage";
 import { CuentaPage } from "../pages/cuenta/CuentaPage";
@@ -64,6 +65,14 @@ export function AppRouter() {
             element={
               <AdminRoute>
                 <HistorialPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/auditoria"
+            element={
+              <AdminRoute>
+                <AuditoriaPage />
               </AdminRoute>
             }
           />

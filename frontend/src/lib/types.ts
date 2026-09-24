@@ -133,6 +133,25 @@ export interface HistorialItem {
   fecha: string;
 }
 
+export interface AuditoriaItem {
+  id: number;
+  fecha: string;
+  usuario_id: number | null;
+  usuario_nombre: string | null;
+  cargo: string | null;
+  metodo: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | string;
+  ruta: string;
+  estatus: number;
+  ip: string | null;
+  detalle: string | null;
+}
+
+export interface AuditoriaResumen {
+  total: number;
+  por_metodo: Record<string, number>;
+  por_cargo: Record<string, number>;
+}
+
 // --- Respuestas armadas por endpoints custom (no son CRUD genérico) ---
 
 export interface ExtensionResumen {

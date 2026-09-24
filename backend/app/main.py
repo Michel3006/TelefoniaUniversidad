@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DataError, IntegrityError
 
 from app.api.v1.router import api_router
+from app.core.auditoria import auditoria_middleware
 from app.core.config import settings
 
 security_logger = logging.getLogger("security")
@@ -57,6 +58,7 @@ app.add_exception_handler(RequestValidationError, handler_validacion)
 app.add_exception_handler(Exception, handler_default)
 
 app.include_router(api_router, prefix=settings.api_prefix)
+app.middleware("http")(auditoria_middleware)
 
 
 @app.get("/health")

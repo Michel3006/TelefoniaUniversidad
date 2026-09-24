@@ -7,6 +7,7 @@ from app.models.planes import Contrato
 from app.models.asignaciones import Asignacion
 from app.models.consumo import AutorizacionExceso, Consumo, FacturaEtecsa
 from app.models.auth import Rol, Usuario
+from app.models.auditoria import Auditoria
 from app.models.historial import Historial
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "AutorizacionExceso",
     "Rol",
     "Usuario",
+    "Auditoria",
     "Historial",
 ]
